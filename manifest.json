@@ -1,25 +1,16 @@
 {
-  "name": "Sync Habits",
-  "short_name": "Sync Habits",
-  "description": "Offline-first habit tracker for two partners, synced to Google Sheets.",
+  "name": "Coupled",
+  "short_name": "Coupled",
+  "description": "A private, shared space for two — habits, lists, and a Friday Vault. End-to-end encrypted.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0b0f19",
-  "theme_color": "#0b0f19",
+  "background_color": "#f5f5f7",
+  "theme_color": "#ffffff",
   "icons": [
-    {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%230b0f19'/%3E%3Ctext x='96' y='132' font-size='104' text-anchor='middle' font-family='system-ui,Segoe UI,Roboto,sans-serif'%3E%E2%9C%85%3C/text%3E%3C/svg%3E",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='108' fill='%230b0f19'/%3E%3Ctext x='256' y='352' font-size='280' text-anchor='middle' font-family='system-ui,Segoe UI,Roboto,sans-serif'%3E%E2%9C%85%3C/text%3E%3C/svg%3E",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Sync Habits</title>
+  <title>Coupled</title>
 
   <!-- ============ PWA / Add-to-Home-Screen ============ -->
   <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#0b0f19" />
+  <meta name="theme-color" content="#ffffff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Sync Habits" />
-  <link rel="apple-touch-icon"
-        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='38' fill='%230b0f19'/%3E%3Ctext x='90' y='124' font-size='98' text-anchor='middle'%3E%E2%9C%85%3C/text%3E%3C/svg%3E" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Coupled" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
 
   <!-- ============ Firebase (compat SDK — global `firebase`) ============ -->
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -23,104 +23,107 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
-      darkMode: 'class',
-      theme: { extend: { colors: { midnight: '#0b0f19', panel: '#141a29', panel2: '#1c2438' } } },
+      theme: {
+        extend: {
+          colors: {
+            appbg: '#f5f5f7', card: '#ffffff', ink: '#1d1d1f',
+            sub: '#6e6e73', accent: '#0071e3', accentdark: '#0060c0',
+            line: '#e5e5ea', partnerA: '#0071e3', partnerB: '#ff2d55',
+          },
+          fontFamily: { sans: ['-apple-system','BlinkMacSystemFont','SF Pro Text','Segoe UI','Roboto','Helvetica','Arial','sans-serif'] },
+        },
+      },
     };
   </script>
 
   <style>
-    html, body { background: #0b0f19; }
+    html, body { background: #f5f5f7; }
     body { -webkit-tap-highlight-color: transparent; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
-    .habit-btn { transition: transform .08s ease, background-color .25s ease, border-color .25s ease, box-shadow .25s ease; }
-    .habit-btn:active { transform: scale(0.95); }
-    .flash-success { background-color: #059669 !important; border-color: #10b981 !important; box-shadow: 0 0 0 4px rgba(16,185,129,.25); }
+    .habit-btn { transition: transform .1s ease, box-shadow .2s ease, border-color .2s ease; }
+    .habit-btn:active { transform: scale(0.96); }
+    .flash-success { background-color: #e7f8ec !important; border-color: #34c759 !important; box-shadow: 0 0 0 3px rgba(52,199,89,.18); }
     @keyframes pop { 0%{transform:scale(.6);opacity:0} 60%{transform:scale(1.15);opacity:1} 100%{transform:scale(1);opacity:1} }
     .pop { animation: pop .35s ease; }
     .fade-in { animation: fade .25s ease; }
     @keyframes fade { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
-    @keyframes pulse2 { 0%,100%{opacity:1} 50%{opacity:.35} }
+    @keyframes pulse2 { 0%,100%{opacity:1} 50%{opacity:.4} }
     .pulse-dot { animation: pulse2 1.6s ease-in-out infinite; }
+    .card-shadow { box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 1px 8px rgba(0,0,0,.04); }
   </style>
 </head>
 
-<body class="bg-midnight text-slate-100 min-h-screen antialiased selection:bg-indigo-500/40">
+<body class="bg-appbg text-ink font-sans min-h-screen antialiased">
 
   <div class="mx-auto max-w-md px-4 py-6 min-h-screen flex flex-col">
 
     <!-- ===================== HEADER ===================== -->
-    <header class="flex items-center justify-between mb-5">
+    <header class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-2">
-        <span class="text-2xl">✅</span>
-        <h1 class="text-xl font-bold tracking-tight">Sync Habits</h1>
+        <span class="text-2xl">💙</span>
+        <h1 class="text-2xl font-bold tracking-tight">Coupled</h1>
       </div>
-      <button id="settingsBtn" title="Settings"
-        class="hidden h-10 w-10 grid place-items-center rounded-xl bg-panel hover:bg-panel2 border border-white/5 active:scale-95 transition">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M10.34 3.94c.09-.54.56-.94 1.11-.94h1.1c.55 0 1.02.4 1.11.94l.17 1.02c.06.35.3.63.62.78.13.06.26.13.38.2.31.18.69.2 1.02.07l.96-.36c.51-.19 1.09.02 1.36.5l.55.95c.27.48.16 1.09-.27 1.44l-.8.66c-.28.23-.42.58-.38.94.01.14.01.28 0 .42-.04.36.1.71.38.94l.8.66c.43.35.54.96.27 1.44l-.55.95c-.27.48-.85.69-1.36.5l-.96-.36c-.33-.13-.71-.11-1.02.07-.12.07-.25.14-.38.2-.32.15-.56.43-.62.78l-.17 1.02c-.09.54-.56.94-1.11.94h-1.1c-.55 0-1.02-.4-1.11-.94l-.17-1.02c-.06-.35-.3-.63-.62-.78a4.6 4.6 0 01-.38-.2c-.31-.18-.69-.2-1.02-.07l-.96.36c-.51.19-1.09-.02-1.36-.5l-.55-.95c-.27-.48-.16-1.09.27-1.44l.8-.66c.28-.23.42-.58.38-.94a4.2 4.2 0 010-.42c.04-.36-.1-.71-.38-.94l-.8-.66c-.43-.35-.54-.96-.27-1.44l.55-.95c.27-.48.85-.69 1.36-.5l.96.36c.33.13.71.11 1.02-.07.12-.07.25-.14.38-.2.32-.15.56-.43.62-.78l.17-1.02z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-      </button>
+      <button id="profileBtn" title="Settings" class="hidden h-9 w-9 rounded-full overflow-hidden border border-line active:scale-95 transition"></button>
     </header>
 
     <!-- ===================== VIEW 0: SIGN IN ===================== -->
     <section id="authView" class="hidden flex-1 flex flex-col justify-center fade-in">
       <div class="text-center mb-8">
-        <div class="text-5xl mb-3">💞</div>
-        <h2 class="text-2xl font-bold">Your private space</h2>
-        <p class="text-slate-400 mt-1 text-sm">Sign in with Google. Your data is private to you and whoever you invite.</p>
+        <div class="text-6xl mb-4">💙</div>
+        <h2 class="text-3xl font-bold tracking-tight">Coupled</h2>
+        <p class="text-sub mt-2 text-[15px]">A private, shared space for two. Sign in to begin.</p>
       </div>
       <button id="signInBtn"
-        class="mx-auto flex items-center gap-3 rounded-xl bg-white text-slate-800 font-semibold px-5 py-3 shadow active:scale-95 transition">
+        class="mx-auto flex items-center gap-3 rounded-full bg-white text-ink font-medium px-6 py-3 border border-line card-shadow active:scale-95 transition">
         <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
         Sign in with Google
       </button>
-      <p id="authMsg" class="mt-4 text-center text-xs text-slate-500"></p>
+      <p id="authMsg" class="mt-4 text-center text-xs text-sub"></p>
     </section>
 
     <!-- ===================== VIEW 0b: SECRET PHRASE (E2E key) ===================== -->
     <section id="keyView" class="hidden flex-1 flex flex-col justify-center fade-in">
       <div class="text-center mb-6">
         <div class="text-5xl mb-3">🔐</div>
-        <h2 id="keyTitle" class="text-2xl font-bold">Set your secret phrase</h2>
-        <p id="keyHint" class="text-slate-400 mt-1 text-sm px-2">This encrypts everything end-to-end. Share it with your partner. If you both lose it, the data can't be recovered.</p>
+        <h2 id="keyTitle" class="text-2xl font-bold tracking-tight">Set your secret phrase</h2>
+        <p id="keyHint" class="text-sub mt-2 text-sm px-2">This encrypts everything end-to-end. Share it with your partner. If you both lose it, the data can't be recovered.</p>
       </div>
       <input id="keyInput" type="password" autocomplete="off" placeholder="Secret phrase"
-        class="w-full rounded-xl bg-panel border border-white/10 px-3 py-3 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 focus:outline-none" />
-      <button id="keyBtn" class="mt-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold py-3 active:scale-95 transition">Unlock</button>
-      <button id="keySignOut" class="mt-2 text-xs text-slate-500 underline">Sign out</button>
+        class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+      <button id="keyBtn" class="mt-3 rounded-full bg-accent hover:bg-accentdark text-white font-semibold py-3 active:scale-95 transition">Unlock</button>
+      <button id="keySignOut" class="mt-3 text-xs text-sub underline">Sign out</button>
       <p id="keyMsg" class="mt-3 text-center text-xs"></p>
     </section>
 
     <!-- ===================== MAIN APP ===================== -->
     <main id="appView" class="hidden flex-1 fade-in pb-28">
 
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-slate-300">Hi, <span id="currentUser" class="font-semibold text-indigo-400">—</span></p>
-        <div id="statusPill" class="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full bg-panel border border-white/5">
-          <span id="statusDot" class="h-2 w-2 rounded-full bg-emerald-400 pulse-dot"></span>
-          <span id="statusText">Synced</span>
+      <div class="flex items-center justify-between mb-5">
+        <p class="text-sub text-[15px]">Hi, <span id="currentUser" class="font-semibold text-ink">—</span></p>
+        <div id="statusPill" class="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full bg-white border border-line">
+          <span id="statusDot" class="h-2 w-2 rounded-full bg-[#34c759] pulse-dot"></span>
+          <span id="statusText" class="text-sub">Synced</span>
         </div>
       </div>
 
       <!-- ---------- INSIGHTS ---------- -->
-      <div class="mb-4">
+      <div class="mb-5">
         <div class="flex items-center justify-between mb-2">
-          <h3 class="text-xs font-medium text-slate-400">This week</h3>
-          <span class="text-[10px] text-slate-600"><span id="legendA" class="text-indigo-300">—</span> · <span id="legendB" class="text-emerald-300">—</span></span>
+          <h3 class="text-xs font-semibold text-sub uppercase tracking-wide">This week</h3>
+          <span class="text-[10px] text-sub"><span id="legendA" class="text-partnerA font-medium">—</span> · <span id="legendB" class="text-partnerB font-medium">—</span></span>
         </div>
         <div id="insights" class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1"></div>
       </div>
 
       <!-- ---------- TAB: HABITS ---------- -->
       <section id="tabHabits" class="tab-panel">
-        <div id="habitGrid" class="grid grid-cols-2 gap-3 mb-6"></div>
-        <div class="rounded-2xl bg-panel border border-white/5 p-4">
+        <div id="habitGrid" class="grid grid-cols-2 gap-3 mb-5"></div>
+        <div class="rounded-2xl bg-card border border-line card-shadow p-4">
           <div class="flex items-center justify-between mb-3">
-            <h3 class="font-semibold text-sm text-slate-200">Today</h3>
-            <span id="todayCount" class="text-xs text-slate-400">0 logged</span>
+            <h3 class="font-semibold text-[15px]">Today</h3>
+            <span id="todayCount" class="text-xs text-sub">0 logged</span>
           </div>
           <ul id="todayList" class="space-y-2 text-sm">
-            <li class="text-slate-500 italic">Nothing logged yet — tap a habit above.</li>
+            <li class="text-sub italic">Nothing logged yet — tap a habit above.</li>
           </ul>
         </div>
       </section>
@@ -129,8 +132,8 @@
       <section id="tabShopping" class="tab-panel hidden">
         <div class="flex gap-2 mb-4">
           <input id="shopInput" type="text" enterkeyhint="done" placeholder="Add an item…"
-            class="flex-1 rounded-xl bg-panel border border-white/10 px-3 py-3 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 focus:outline-none" />
-          <button id="shopAdd" class="rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold px-5 active:scale-95 transition">Add</button>
+            class="flex-1 rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+          <button id="shopAdd" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-5 active:scale-95 transition">Add</button>
         </div>
         <ul id="shopList" class="space-y-2"></ul>
       </section>
@@ -139,8 +142,8 @@
       <section id="tabTodo" class="tab-panel hidden">
         <div class="flex gap-2 mb-4">
           <input id="todoInput" type="text" enterkeyhint="done" placeholder="Add a task…"
-            class="flex-1 rounded-xl bg-panel border border-white/10 px-3 py-3 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 focus:outline-none" />
-          <button id="todoAdd" class="rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold px-5 active:scale-95 transition">Add</button>
+            class="flex-1 rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+          <button id="todoAdd" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-5 active:scale-95 transition">Add</button>
         </div>
         <ul id="todoList2" class="space-y-2"></ul>
       </section>
@@ -148,65 +151,77 @@
       <!-- ---------- TAB: FRIDAY VAULT ---------- -->
       <section id="tabVault" class="tab-panel hidden">
         <div id="vaultBanner" class="rounded-2xl border p-4 mb-4 text-center"></div>
-        <div class="rounded-2xl bg-panel border border-white/5 p-4 mb-4">
-          <label class="block text-xs font-medium text-slate-400 mb-2">Leave a sealed note for Friday 💌</label>
+        <div class="rounded-2xl bg-card border border-line card-shadow p-4 mb-4">
+          <label class="block text-xs font-medium text-sub mb-2">Leave a sealed note for Friday 💌</label>
           <textarea id="vaultInput" rows="3" maxlength="1000" placeholder="A thought, a thank-you, a secret… sealed until Friday 5pm."
-            class="w-full rounded-xl bg-midnight border border-white/10 px-3 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 focus:outline-none resize-none"></textarea>
+            class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none resize-none"></textarea>
           <div class="mt-3 flex items-center justify-between">
-            <span id="sealedCount" class="text-[11px] text-slate-500"></span>
-            <button id="vaultSeal" class="rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold px-5 py-2.5 active:scale-95 transition">🔒 Seal it</button>
+            <span id="sealedCount" class="text-[11px] text-sub"></span>
+            <button id="vaultSeal" class="rounded-full bg-accent hover:bg-accentdark text-white font-semibold px-5 py-2.5 active:scale-95 transition">🔒 Seal it</button>
           </div>
         </div>
-        <h3 class="font-semibold text-sm text-slate-200 mb-2 px-1">Opened notes</h3>
+        <h3 class="font-semibold text-[15px] mb-2 px-1">Opened notes</h3>
         <ul id="vaultList" class="space-y-3"></ul>
       </section>
     </main>
 
-    <footer class="mt-6 mb-2 text-center text-[11px] text-slate-600">
-      Private · Real-time sync via Firebase
+    <footer class="mt-6 mb-2 text-center text-[11px] text-sub">
+      Private · End-to-end encrypted
     </footer>
   </div>
 
   <!-- ===================== BOTTOM TAB BAR ===================== -->
-  <nav id="tabBar" class="hidden fixed bottom-0 inset-x-0 z-30 border-t border-white/10 bg-panel/95 backdrop-blur">
+  <nav id="tabBar" class="hidden fixed bottom-0 inset-x-0 z-30 border-t border-line bg-white/90 backdrop-blur">
     <div class="mx-auto max-w-md grid grid-cols-4">
-      <button data-tab="habits" class="tab-btn flex flex-col items-center gap-1 py-3 text-slate-400"><span class="text-xl">✅</span><span class="text-[11px] font-medium">Habits</span></button>
-      <button data-tab="shopping" class="tab-btn flex flex-col items-center gap-1 py-3 text-slate-400"><span class="text-xl">🛒</span><span class="text-[11px] font-medium">Shopping</span></button>
-      <button data-tab="todo" class="tab-btn flex flex-col items-center gap-1 py-3 text-slate-400"><span class="text-xl">📝</span><span class="text-[11px] font-medium">To-Do</span></button>
-      <button data-tab="vault" class="tab-btn flex flex-col items-center gap-1 py-3 text-slate-400"><span class="text-xl">🔒</span><span class="text-[11px] font-medium">Vault</span></button>
+      <button data-tab="habits" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">✅</span><span class="text-[11px] font-medium">Habits</span></button>
+      <button data-tab="shopping" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">🛒</span><span class="text-[11px] font-medium">Shopping</span></button>
+      <button data-tab="todo" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">📝</span><span class="text-[11px] font-medium">To-Do</span></button>
+      <button data-tab="vault" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">🔒</span><span class="text-[11px] font-medium">Vault</span></button>
     </div>
   </nav>
 
   <!-- ===================== SETTINGS MODAL ===================== -->
-  <div id="settingsModal" class="hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm px-4 py-8 overflow-y-auto">
-    <div class="mx-auto max-w-md w-full rounded-2xl bg-panel border border-white/10 p-5 fade-in">
+  <div id="settingsModal" class="hidden fixed inset-0 z-40 bg-black/30 backdrop-blur-sm px-4 py-8 overflow-y-auto">
+    <div class="mx-auto max-w-md w-full rounded-2xl bg-card border border-line card-shadow p-5 fade-in">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-bold">Settings</h2>
-        <button id="settingsClose" class="h-9 w-9 grid place-items-center rounded-lg hover:bg-panel2 text-slate-400 active:scale-95 transition">✕</button>
+        <button id="settingsClose" class="h-9 w-9 grid place-items-center rounded-full hover:bg-appbg text-sub active:scale-95 transition">✕</button>
       </div>
 
       <!-- Signed-in identity -->
-      <label class="block text-xs font-medium text-slate-400 mb-1">Signed in as</label>
-      <div class="flex items-center justify-between gap-3 mb-5 rounded-xl bg-panel2 border border-white/5 px-3 py-3">
-        <div class="min-w-0">
+      <label class="block text-xs font-medium text-sub mb-1">Signed in as</label>
+      <div class="flex items-center gap-3 mb-5 rounded-xl bg-appbg border border-line px-3 py-3">
+        <span id="meAvatar" class="h-10 w-10 rounded-full overflow-hidden shrink-0 bg-accent"></span>
+        <div class="min-w-0 flex-1">
           <div id="meName" class="font-medium truncate">—</div>
-          <div id="meEmail" class="text-[11px] text-slate-500 truncate">—</div>
+          <div id="meEmail" class="text-[11px] text-sub truncate">—</div>
         </div>
-        <button id="signOutBtn" class="shrink-0 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-2 text-xs active:scale-95 transition">Sign out</button>
+        <button id="signOutBtn" class="shrink-0 rounded-full bg-white hover:bg-appbg border border-line px-3 py-2 text-xs active:scale-95 transition">Sign out</button>
       </div>
 
       <!-- Your space + members -->
-      <label class="block text-xs font-medium text-slate-400 mb-1">Your space</label>
+      <label class="block text-xs font-medium text-sub mb-1">Your space</label>
       <ul id="membersList" class="mb-4 space-y-1.5 text-sm"></ul>
 
       <!-- Invite partner -->
-      <label class="block text-xs font-medium text-slate-400 mb-1">Invite your partner (by Google email)</label>
+      <label class="block text-xs font-medium text-sub mb-1">Invite your partner (by Google email)</label>
       <div class="flex gap-2">
         <input id="inInvite" type="email" inputmode="email" placeholder="partner@gmail.com"
-          class="flex-1 rounded-xl bg-midnight border border-white/10 px-3 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 focus:outline-none" />
-        <button id="inviteBtn" class="rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold px-4 active:scale-95 transition">Invite</button>
+          class="flex-1 rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+        <button id="inviteBtn" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-4 active:scale-95 transition">Invite</button>
       </div>
-      <p class="mt-1.5 text-[11px] text-slate-500">They sign in with that Google account and join automatically — sharing this same space.</p>
+      <p class="mt-1.5 text-[11px] text-sub">They sign in with that Google account and join automatically — sharing this same space.</p>
+
+      <!-- Import old data (one-time migration) -->
+      <div class="mt-5 border-t border-line pt-4">
+        <label class="block text-xs font-medium text-sub mb-2">Import old data (one-time)</label>
+        <label class="block text-[11px] text-sub mb-1">Habits CSV (habits.csv)</label>
+        <input id="impCsv" type="file" accept=".csv,text/csv" class="w-full text-xs text-ink mb-3 file:mr-3 file:rounded-lg file:border file:border-line file:bg-appbg file:px-3 file:py-1.5 file:text-ink" />
+        <label class="block text-[11px] text-sub mb-1">Lists JSON (lists.json)</label>
+        <input id="impJson" type="file" accept=".json,application/json" class="w-full text-xs text-ink mb-3 file:mr-3 file:rounded-lg file:border file:border-line file:bg-appbg file:px-3 file:py-1.5 file:text-ink" />
+        <button id="importBtn" class="w-full rounded-full bg-white hover:bg-appbg border border-line py-2.5 text-sm font-medium active:scale-95 transition">Import into my space</button>
+        <p class="mt-1.5 text-[11px] text-sub">Download both files from Drive first (File → Download), then pick them here. Safe to run twice — duplicates are skipped.</p>
+      </div>
       <p id="settingsMsg" class="mt-3 text-center text-xs"></p>
     </div>
   </div>
@@ -214,13 +229,11 @@
   <!-- Toast -->
   <div id="toast"
     class="pointer-events-none fixed left-1/2 -translate-x-1/2 bottom-8 z-50 opacity-0 transition-opacity duration-300
-           bg-emerald-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg"></div>
+           bg-ink text-white text-sm font-medium px-4 py-2.5 rounded-full shadow-lg"></div>
 
   <script>
   /* ============================================================
-   *  FIREBASE CONFIG  — paste yours from the Firebase console
-   *  (Project settings → Your apps → Web app). None of this is secret;
-   *  security is enforced by Firestore rules. See FIREBASE_SETUP.md.
+   *  FIREBASE CONFIG
    * ============================================================ */
   const FIREBASE_CONFIG = {
     apiKey: "AIzaSyCiAmHonwoJleeTXXIMFcJgIPRJD1ipcmM",
@@ -233,7 +246,6 @@
   };
   const firebaseConfigured = () => !String(FIREBASE_CONFIG.apiKey).startsWith("PASTE_");
 
-  // Habits shown in the grid (edit freely).
   const HABITS = [
     { key: "workout",  label: "Workout",  emoji: "🏋️" },
     { key: "read",     label: "Read",     emoji: "📚" },
@@ -242,27 +254,23 @@
     { key: "sleep",    label: "Sleep",    emoji: "😴" },
     { key: "eatwell",  label: "Eat Well", emoji: "🥗" },
   ];
-
-  // Friday Vault timing (0=Sun … 5=Fri).
   const VAULT_REVEAL_DOW = 5, VAULT_REVEAL_HOUR = 17, VAULT_OPEN_HOURS = 24;
 
-  /* ---------- small helpers ---------- */
+  /* ---------- helpers ---------- */
   const el = (id) => document.getElementById(id);
   const uid = () => (crypto?.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
   const todayStr = (d = new Date()) => d.toISOString().slice(0, 10);
   const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-  /* ---------- end-to-end encryption (AES-GCM key from a shared passphrase) ---------- */
+  /* ---------- end-to-end encryption ---------- */
   const VERIFIER_TEXT = "sync-habits-verify-v1";
-  let KEY = null;                 // CryptoKey, in memory only — never sent anywhere
+  let KEY = null;
   const passCacheKey = () => "sh_pass_" + SPACE_ID;
   const toB64 = (bytes) => btoa(String.fromCharCode.apply(null, new Uint8Array(bytes)));
   const fromB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
-
   async function deriveKey(passphrase, saltBytes) {
     const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(passphrase), "PBKDF2", false, ["deriveKey"]);
-    return crypto.subtle.deriveKey(
-      { name: "PBKDF2", salt: saltBytes, iterations: 150000, hash: "SHA-256" },
+    return crypto.subtle.deriveKey({ name: "PBKDF2", salt: saltBytes, iterations: 150000, hash: "SHA-256" },
       base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
   }
   async function encStr(text) {
@@ -276,9 +284,7 @@
     const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, KEY, ct);
     return new TextDecoder().decode(pt);
   }
-  // Encrypt a content object -> the doc we store ({uid clear for attribution, enc = ciphertext}).
   async function encPayload(obj) { return { uid: ME.uid, enc: await encStr(JSON.stringify(obj)) }; }
-  // Decrypt a Firestore doc back into a usable object.
   async function decDoc(d) {
     const data = d.data() || {};
     let content = {};
@@ -286,14 +292,13 @@
     return { id: d.id, uid: data.uid, _pending: d.metadata.hasPendingWrites, ...content };
   }
 
-  /* ---------- app state ---------- */
+  /* ---------- state ---------- */
   let auth = null, db = null;
-  let ME = null;                 // { uid, email, name }
-  let SPACE_ID = null;
-  let SPACE_DOC = null;          // { members[], memberProfiles{}, invitedEmails[], ownerUid }
+  let ME = null;
+  let SPACE_ID = null, SPACE_DOC = null;
   const STATE = { logs: [], items: [], notes: [] };
   const PENDING = { logs: false, items: false, notes: false };
-  let unsub = [];               // active snapshot unsubscribers
+  let unsub = [];
   let ACTIVE_TAB = "habits";
   let booting = false;
 
@@ -305,21 +310,18 @@
     wireUi();
     window.addEventListener("online", refreshStatus);
     window.addEventListener("offline", refreshStatus);
-
-    if (!firebaseConfigured()) { showAuth("Firebase isn't set up yet — add your config in the code (see FIREBASE_SETUP.md)."); return; }
-
+    if (!firebaseConfigured()) { showAuth("Firebase isn't set up yet — add your config in the code."); return; }
     firebase.initializeApp(FIREBASE_CONFIG);
     auth = firebase.auth();
     db = firebase.firestore();
-    db.enablePersistence({ synchronizeTabs: true }).catch(() => {}); // offline cache; ok if it fails
-
-    auth.getRedirectResult().catch(() => {}); // in case popup fell back to redirect
+    db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+    auth.getRedirectResult().catch(() => {});
     auth.onAuthStateChanged(handleAuth);
   }
 
   function wireUi() {
     el("signInBtn").addEventListener("click", doSignIn);
-    el("settingsBtn").addEventListener("click", openSettings);
+    el("profileBtn").addEventListener("click", openSettings);
     el("settingsClose").addEventListener("click", closeSettings);
     el("settingsModal").addEventListener("click", (ev) => { if (ev.target === el("settingsModal")) closeSettings(); });
     el("signOutBtn").addEventListener("click", doSignOut);
@@ -328,7 +330,7 @@
     el("keyInput").addEventListener("keydown", (e) => { if (e.key === "Enter") onKeySubmit(); });
     el("inviteBtn").addEventListener("click", invitePartner);
     el("inInvite").addEventListener("keydown", (e) => { if (e.key === "Enter") invitePartner(); });
-
+    el("importBtn").addEventListener("click", importOldData);
     document.querySelectorAll(".tab-btn").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
     el("shopAdd").addEventListener("click", () => addFromInput("shopping", "shopInput"));
     el("shopInput").addEventListener("keydown", (e) => { if (e.key === "Enter") addFromInput("shopping", "shopInput"); });
@@ -345,12 +347,9 @@
     const provider = new firebase.auth.GoogleAuthProvider();
     el("authMsg").textContent = "Opening Google…";
     auth.signInWithPopup(provider).catch((err) => {
-      // Popups are often blocked in installed PWAs — fall back to redirect.
       if (err && (err.code === "auth/popup-blocked" || err.code === "auth/cancelled-popup-request" || err.code === "auth/operation-not-supported-in-this-environment")) {
         auth.signInWithRedirect(provider);
-      } else {
-        el("authMsg").textContent = "Sign-in failed: " + (err && err.message ? err.message : err);
-      }
+      } else { el("authMsg").textContent = "Sign-in failed: " + (err && err.message ? err.message : err); }
     });
   }
 
@@ -358,32 +357,21 @@
     teardownListeners();
     KEY = null;
     if (!user) { ME = null; SPACE_ID = null; SPACE_DOC = null; showAuth(""); return; }
-    ME = { uid: user.uid, email: (user.email || "").toLowerCase(), name: user.displayName || (user.email || "").split("@")[0] };
+    ME = { uid: user.uid, email: (user.email || "").toLowerCase(), name: user.displayName || (user.email || "").split("@")[0], photo: user.photoURL || "" };
     showAuth("Setting up your space…");
-    try {
-      await ensureSpace();
-      await openSpaceKey();   // sets KEY, or shows the secret-phrase screen and waits
-    } catch (err) {
-      showAuth("Couldn't open your space: " + (err && err.message ? err.message : err));
-    }
+    try { await ensureSpace(); await openSpaceKey(); }
+    catch (err) { showAuth("Couldn't open your space: " + (err && err.message ? err.message : err)); }
   }
 
-  function doSignOut() {
-    KEY = null;
-    if (auth) auth.signOut();
-  }
+  function doSignOut() { KEY = null; if (auth) auth.signOut(); }
 
-  /* Establish the encryption key: create it for a new space, or unlock an existing one. */
   async function openSpaceKey() {
     KEY = null;
-    // Brand-new space with no encryption set up yet -> ask the user to create a phrase.
     if (!SPACE_DOC || !SPACE_DOC.encSalt) { showKey("create"); return; }
-    // Existing space: try the locally-cached phrase first.
     const cached = localStorage.getItem(passCacheKey());
     if (cached && await tryUnlock(cached)) { afterKeyReady(); return; }
     showKey("unlock");
   }
-
   async function tryUnlock(passphrase) {
     try {
       const key = await deriveKey(passphrase, fromB64(SPACE_DOC.encSalt));
@@ -394,12 +382,11 @@
       return true;
     } catch (e) { return false; }
   }
-
   async function onKeySubmit() {
     const phrase = el("keyInput").value.trim();
     const msg = el("keyMsg");
-    if (phrase.length < 4) { msg.className = "mt-3 text-center text-xs text-amber-400"; msg.textContent = "Use at least 4 characters."; return; }
-    msg.className = "mt-3 text-center text-xs text-indigo-300"; msg.textContent = "Working…";
+    if (phrase.length < 4) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Use at least 4 characters."; return; }
+    msg.className = "mt-3 text-center text-xs text-accent"; msg.textContent = "Working…";
     try {
       if (el("keyBtn").dataset.mode === "create") {
         const salt = crypto.getRandomValues(new Uint8Array(16));
@@ -411,24 +398,17 @@
         el("keyInput").value = ""; afterKeyReady();
       } else {
         if (await tryUnlock(phrase)) { el("keyInput").value = ""; afterKeyReady(); }
-        else { msg.className = "mt-3 text-center text-xs text-red-400"; msg.textContent = "That phrase doesn't match. Ask your partner for the exact phrase."; }
+        else { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "That phrase doesn't match. Ask your partner for the exact phrase."; }
       }
-    } catch (err) {
-      msg.className = "mt-3 text-center text-xs text-red-400"; msg.textContent = "Error: " + (err && err.message ? err.message : err);
-    }
+    } catch (err) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Error: " + (err && err.message ? err.message : err); }
   }
-
   function afterKeyReady() { startListeners(); enterApp(); }
 
-  /* Find the user's space, join an invite, or create a new one. */
   async function ensureSpace() {
     if (booting) return; booting = true;
     try {
-      // 1) Already a member of a space?
       const mine = await db.collection("spaces").where("members", "array-contains", ME.uid).limit(1).get();
       if (!mine.empty) { SPACE_ID = mine.docs[0].id; SPACE_DOC = mine.docs[0].data(); return; }
-
-      // 2) Invited? (invite doc id == my email)
       const inv = await db.collection("invites").doc(ME.email).get();
       if (inv.exists) {
         const spaceId = inv.data().spaceId;
@@ -442,20 +422,13 @@
         SPACE_DOC = (await db.collection("spaces").doc(spaceId).get()).data();
         return;
       }
-
-      // 3) Create a brand-new space owned by me.
       const doc = {
-        ownerUid: ME.uid,
-        ownerEmail: ME.email,
-        members: [ME.uid],
-        memberEmails: [ME.email],
-        memberProfiles: { [ME.uid]: { name: ME.name, email: ME.email } },
-        invitedEmails: [],
+        ownerUid: ME.uid, ownerEmail: ME.email, members: [ME.uid], memberEmails: [ME.email],
+        memberProfiles: { [ME.uid]: { name: ME.name, email: ME.email } }, invitedEmails: [],
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       };
       const ref = await db.collection("spaces").add(doc);
-      SPACE_ID = ref.id;
-      SPACE_DOC = doc;
+      SPACE_ID = ref.id; SPACE_DOC = doc;
     } finally { booting = false; }
   }
 
@@ -463,25 +436,17 @@
 
   function startListeners() {
     teardownListeners();
-    // Space metadata (members / invites)
-    unsub.push(spaceRef().onSnapshot((snap) => {
-      SPACE_DOC = snap.data() || SPACE_DOC;
-      renderMembers(); renderInsights(); refreshStatus();
-    }));
-    // Sub-collections
+    unsub.push(spaceRef().onSnapshot((snap) => { SPACE_DOC = snap.data() || SPACE_DOC; renderMembers(); renderInsights(); refreshStatus(); }));
     unsub.push(spaceRef().collection("logs").onSnapshot({ includeMetadataChanges: true }, async (snap) => {
-      STATE.logs = await Promise.all(snap.docs.map(decDoc));
-      PENDING.logs = snap.metadata.hasPendingWrites;
+      STATE.logs = await Promise.all(snap.docs.map(decDoc)); PENDING.logs = snap.metadata.hasPendingWrites;
       renderToday(); renderInsights(); refreshStatus();
     }));
     unsub.push(spaceRef().collection("items").onSnapshot({ includeMetadataChanges: true }, async (snap) => {
-      STATE.items = await Promise.all(snap.docs.map(decDoc));
-      PENDING.items = snap.metadata.hasPendingWrites;
+      STATE.items = await Promise.all(snap.docs.map(decDoc)); PENDING.items = snap.metadata.hasPendingWrites;
       renderLists(); refreshStatus();
     }));
     unsub.push(spaceRef().collection("notes").onSnapshot({ includeMetadataChanges: true }, async (snap) => {
-      STATE.notes = await Promise.all(snap.docs.map(decDoc));
-      PENDING.notes = snap.metadata.hasPendingWrites;
+      STATE.notes = await Promise.all(snap.docs.map(decDoc)); PENDING.notes = snap.metadata.hasPendingWrites;
       renderVault(); renderInsights(); refreshStatus();
     }));
   }
@@ -490,12 +455,15 @@
   /* ============================================================
    *  Views
    * ============================================================ */
+  function avatarHtml(size) {
+    if (ME && ME.photo) return `<img src="${ME.photo}" referrerpolicy="no-referrer" class="h-full w-full object-cover" />`;
+    const initial = ((ME && ME.name) || "?").trim()[0].toUpperCase();
+    return `<span class="h-full w-full grid place-items-center bg-accent text-white font-semibold ${size}">${escapeHtml(initial)}</span>`;
+  }
   function showAuth(msg) {
     el("authView").classList.remove("hidden"); el("authView").classList.add("flex");
     el("keyView").classList.add("hidden"); el("keyView").classList.remove("flex");
-    el("appView").classList.add("hidden");
-    el("settingsBtn").classList.add("hidden");
-    el("tabBar").classList.add("hidden");
+    el("appView").classList.add("hidden"); el("profileBtn").classList.add("hidden"); el("tabBar").classList.add("hidden");
     if (msg !== undefined) el("authMsg").textContent = msg;
   }
   function showKey(mode) {
@@ -508,17 +476,14 @@
     el("keyMsg").textContent = "";
     el("authView").classList.add("hidden"); el("authView").classList.remove("flex");
     el("keyView").classList.remove("hidden"); el("keyView").classList.add("flex");
-    el("appView").classList.add("hidden");
-    el("settingsBtn").classList.add("hidden");
-    el("tabBar").classList.add("hidden");
+    el("appView").classList.add("hidden"); el("profileBtn").classList.add("hidden"); el("tabBar").classList.add("hidden");
   }
   function enterApp() {
     el("currentUser").textContent = ME.name;
+    el("profileBtn").innerHTML = avatarHtml("text-sm");
     el("authView").classList.add("hidden"); el("authView").classList.remove("flex");
     el("keyView").classList.add("hidden"); el("keyView").classList.remove("flex");
-    el("appView").classList.remove("hidden");
-    el("settingsBtn").classList.remove("hidden");
-    el("tabBar").classList.remove("hidden");
+    el("appView").classList.remove("hidden"); el("profileBtn").classList.remove("hidden"); el("tabBar").classList.remove("hidden");
     switchTab(ACTIVE_TAB);
     renderToday(); renderLists(); renderVault(); renderInsights(); refreshStatus();
   }
@@ -529,18 +494,19 @@
     Object.entries(map).forEach(([k, id]) => el(id).classList.toggle("hidden", k !== tab));
     document.querySelectorAll(".tab-btn").forEach((b) => {
       const on = b.dataset.tab === tab;
-      b.classList.toggle("text-indigo-400", on);
-      b.classList.toggle("text-slate-400", !on);
+      b.classList.toggle("text-accent", on);
+      b.classList.toggle("text-sub", !on);
     });
     if (tab === "vault") renderVault();
   }
 
   /* ============================================================
-   *  Settings / invite / members
+   *  Settings / invite / members / import
    * ============================================================ */
   function openSettings() {
     el("meName").textContent = ME ? ME.name : "—";
     el("meEmail").textContent = ME ? ME.email : "—";
+    el("meAvatar").innerHTML = avatarHtml("text-base");
     el("settingsMsg").textContent = "";
     renderMembers();
     el("settingsModal").classList.remove("hidden");
@@ -552,39 +518,86 @@
     const ids = (SPACE_DOC && SPACE_DOC.members) || [];
     return ids.map((id) => ({ uid: id, name: (mp[id] && mp[id].name) || (mp[id] && mp[id].email) || "Member", email: (mp[id] && mp[id].email) || "" }));
   }
-
   function renderMembers() {
     const ul = el("membersList");
     if (!ul || !SPACE_DOC) return;
     const rows = members().map((m) =>
-      `<li class="flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-        <span class="text-slate-200">${escapeHtml(m.name)}</span>
-        ${m.uid === ME.uid ? '<span class="text-[10px] text-slate-500">(you)</span>' : ""}
-        ${m.uid === SPACE_DOC.ownerUid ? '<span class="text-[10px] text-indigo-400">owner</span>' : ""}</li>`
+      `<li class="flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-[#34c759]"></span>
+        <span class="text-ink">${escapeHtml(m.name)}</span>
+        ${m.uid === ME.uid ? '<span class="text-[10px] text-sub">(you)</span>' : ""}
+        ${m.uid === SPACE_DOC.ownerUid ? '<span class="text-[10px] text-accent">owner</span>' : ""}</li>`
     );
     const invited = (SPACE_DOC.invitedEmails || []).filter((e) => !(SPACE_DOC.memberEmails || []).includes(e));
-    invited.forEach((e) => rows.push(`<li class="flex items-center gap-2 text-slate-500"><span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>${escapeHtml(e)} <span class="text-[10px]">invited</span></li>`));
+    invited.forEach((e) => rows.push(`<li class="flex items-center gap-2 text-sub"><span class="h-1.5 w-1.5 rounded-full bg-[#ff9f0a]"></span>${escapeHtml(e)} <span class="text-[10px]">invited</span></li>`));
     ul.innerHTML = rows.join("");
   }
 
   async function invitePartner() {
     const email = el("inInvite").value.trim().toLowerCase();
     const msg = el("settingsMsg");
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.className = "mt-3 text-center text-xs text-amber-400"; msg.textContent = "Enter a valid email."; return; }
-    if (email === ME.email) { msg.className = "mt-3 text-center text-xs text-amber-400"; msg.textContent = "That's you 🙂"; return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Enter a valid email."; return; }
+    if (email === ME.email) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "That's you 🙂"; return; }
     try {
-      await db.collection("invites").doc(email).set({
-        spaceId: SPACE_ID, invitedByUid: ME.uid, invitedByEmail: ME.email,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      });
+      await db.collection("invites").doc(email).set({ spaceId: SPACE_ID, invitedByUid: ME.uid, invitedByEmail: ME.email, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
       await spaceRef().update({ invitedEmails: firebase.firestore.FieldValue.arrayUnion(email) });
       el("inInvite").value = "";
-      msg.className = "mt-3 text-center text-xs text-emerald-400";
-      msg.textContent = `Invited ${email}. They'll join when they sign in.`;
-    } catch (err) {
-      msg.className = "mt-3 text-center text-xs text-red-400";
-      msg.textContent = "Invite failed: " + (err && err.message ? err.message : err);
+      msg.className = "mt-3 text-center text-xs text-[#0a7d2c]"; msg.textContent = `Invited ${email}. They'll join when they sign in.`;
+    } catch (err) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Invite failed: " + (err && err.message ? err.message : err); }
+  }
+
+  /* ---- one-time migration from old habits.csv + lists.json ---- */
+  function tinyHash(s) { let h = 0; for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; } return (h >>> 0).toString(36); }
+  function docId(raw) { return String(raw).replace(/[^\w-]/g, "_").slice(0, 120); }
+  function parseCsv(text) {
+    const rows = []; let row = [], cur = "", q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+      else if (c === '"') q = true;
+      else if (c === ",") { row.push(cur); cur = ""; }
+      else if (c === "\n") { row.push(cur); rows.push(row); row = []; cur = ""; }
+      else if (c !== "\r") cur += c;
     }
+    if (cur !== "" || row.length) { row.push(cur); rows.push(row); }
+    return rows;
+  }
+  async function putEnc(coll, id, obj, uidVal) {
+    const enc = await encStr(JSON.stringify(obj));
+    return spaceRef().collection(coll).doc(docId(id)).set({ uid: uidVal, enc });
+  }
+  async function importOldData() {
+    const msg = el("settingsMsg");
+    if (!SPACE_ID || !KEY) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Sign in and unlock first."; return; }
+    const csvFile = el("impCsv").files[0], jsonFile = el("impJson").files[0];
+    if (!csvFile && !jsonFile) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Choose at least one file."; return; }
+    msg.className = "mt-3 text-center text-xs text-accent"; msg.textContent = "Importing…";
+    try {
+      const nameToUid = {};
+      members().forEach((m) => { if (m.name) nameToUid[m.name.toLowerCase()] = m.uid; });
+      const uidFor = (name) => (name && nameToUid[String(name).toLowerCase()]) || ME.uid;
+      const writes = []; let count = 0;
+      if (csvFile) {
+        const rows = parseCsv(await csvFile.text());
+        for (let i = 1; i < rows.length; i++) {
+          const r = rows[i]; if (!r || r.length < 3) continue;
+          const date = r[0], user = r[1], habit = r[2];
+          if (!habit || !user) continue;
+          const ts = date ? new Date(date) : new Date();
+          const timestamp = isNaN(ts) ? new Date().toISOString() : ts.toISOString();
+          writes.push(putEnc("logs", "imp-" + tinyHash(user + "|" + habit + "|" + timestamp), { user, habit, timestamp }, uidFor(user)));
+          count++;
+        }
+      }
+      if (jsonFile) {
+        const data = JSON.parse(await jsonFile.text());
+        (data.shopping || []).forEach((it) => { writes.push(putEnc("items", it.id || ("imp-" + tinyHash("s" + it.text + it.ts)), { list: "shopping", text: it.text, user: it.user, ts: it.ts || new Date().toISOString() }, uidFor(it.user))); count++; });
+        (data.todo || []).forEach((it) => { writes.push(putEnc("items", it.id || ("imp-" + tinyHash("t" + it.text + it.ts)), { list: "todo", text: it.text, user: it.user, ts: it.ts || new Date().toISOString() }, uidFor(it.user))); count++; });
+        (data.notes || []).forEach((n) => { const ts = n.ts || new Date().toISOString(); writes.push(putEnc("notes", n.id || ("imp-" + tinyHash("n" + n.text + ts)), { text: n.text, user: n.user, ts, revealAt: n.revealAt || nextReveal(new Date(ts)).toISOString() }, uidFor(n.user))); count++; });
+      }
+      await Promise.all(writes);
+      msg.className = "mt-3 text-center text-xs text-[#0a7d2c]"; msg.textContent = `Imported ${count} item${count === 1 ? "" : "s"} ✓`;
+      renderToday(); renderLists(); renderVault(); renderInsights();
+    } catch (err) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Import failed: " + (err && err.message ? err.message : err); }
   }
 
   /* ============================================================
@@ -595,21 +608,17 @@
     grid.innerHTML = "";
     HABITS.forEach((h) => {
       const btn = document.createElement("button");
-      btn.className = "habit-btn rounded-2xl bg-panel border border-white/5 py-6 flex flex-col items-center gap-2 hover:border-indigo-500/50 focus:outline-none";
-      btn.innerHTML = `<span class="text-3xl">${h.emoji}</span><span class="text-sm font-medium text-slate-200">${h.label}</span>`;
+      btn.className = "habit-btn rounded-2xl bg-card border border-line card-shadow py-6 flex flex-col items-center gap-2 focus:outline-none";
+      btn.innerHTML = `<span class="text-3xl">${h.emoji}</span><span class="text-sm font-medium text-ink">${h.label}</span>`;
       btn.addEventListener("click", () => logHabit(h, btn));
       grid.appendChild(btn);
     });
   }
-
   async function logHabit(habit, btn) {
     if (!SPACE_ID || !KEY) return;
-    flash(btn);
-    showToast(`${habit.emoji} ${habit.label} logged`);
-    try {
-      const payload = await encPayload({ user: ME.name, habit: habit.label, timestamp: new Date().toISOString() });
-      await spaceRef().collection("logs").add(payload);
-    } catch (e) { console.warn("log failed", e); }
+    flash(btn); showToast(`${habit.emoji} ${habit.label} logged`);
+    try { await spaceRef().collection("logs").add(await encPayload({ user: ME.name, habit: habit.label, timestamp: new Date().toISOString() })); }
+    catch (e) { console.warn("log failed", e); }
   }
   function flash(btn) {
     btn.classList.add("flash-success");
@@ -617,43 +626,35 @@
     if (span) { span.classList.add("pop"); setTimeout(() => span.classList.remove("pop"), 400); }
     setTimeout(() => btn.classList.remove("flash-success"), 650);
   }
-
   function renderToday() {
     const t = todayStr();
     const mine = STATE.logs.filter((l) => l.uid === (ME && ME.uid) && (l.timestamp || "").slice(0, 10) === t);
     el("todayCount").textContent = `${mine.length} logged`;
-    if (mine.length === 0) { el("todayList").innerHTML = `<li class="text-slate-500 italic">Nothing logged yet — tap a habit above.</li>`; return; }
+    if (mine.length === 0) { el("todayList").innerHTML = `<li class="text-sub italic">Nothing logged yet — tap a habit above.</li>`; return; }
     mine.sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""));
     el("todayList").innerHTML = mine.map((l) => {
       const h = HABITS.find((x) => x.label === l.habit);
       const emoji = h ? h.emoji : "•";
       const time = new Date(l.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      const badge = l._pending ? `<span class="text-amber-400 text-[11px]">• saving</span>` : `<span class="text-emerald-400 text-[11px]">✓</span>`;
-      return `<li class="flex items-center justify-between">
-                <span class="flex items-center gap-2"><span>${emoji}</span><span>${escapeHtml(l.habit)}</span></span>
-                <span class="flex items-center gap-3 text-slate-400 text-xs">${time} ${badge}</span></li>`;
+      const badge = l._pending ? `<span class="text-[#ff9f0a] text-[11px]">• saving</span>` : `<span class="text-[#34c759] text-[11px]">✓</span>`;
+      return `<li class="flex items-center justify-between"><span class="flex items-center gap-2"><span>${emoji}</span><span>${escapeHtml(l.habit)}</span></span><span class="flex items-center gap-3 text-sub text-xs">${time} ${badge}</span></li>`;
     }).join("");
   }
 
   /* ============================================================
-   *  Shopping / To-Do (shared items)
+   *  Shopping / To-Do
    * ============================================================ */
   async function addFromInput(list, inputId) {
-    const input = el(inputId);
-    const text = input.value.trim();
+    const input = el(inputId); const text = input.value.trim();
     if (!text || !SPACE_ID || !KEY) return;
-    input.value = "";
-    showToast(`Added to ${list === "shopping" ? "shopping" : "to-do"}`);
-    try {
-      const payload = await encPayload({ list, text, user: ME.name, ts: new Date().toISOString() });
-      await spaceRef().collection("items").add(payload);
-    } catch (e) { console.warn("add item failed", e); }
+    input.value = ""; showToast(`Added to ${list === "shopping" ? "shopping" : "to-do"}`);
+    try { await spaceRef().collection("items").add(await encPayload({ list, text, user: ME.name, ts: new Date().toISOString() })); }
+    catch (e) { console.warn("add item failed", e); }
   }
   function removeItem(id, liEl) {
     if (liEl) { liEl.style.opacity = "0.4"; liEl.style.transform = "translateX(8px)"; }
     if (SPACE_ID) spaceRef().collection("items").doc(id).delete().catch((e) => console.warn("remove failed", e));
   }
-
   function renderLists() {
     renderOneList("shopping", "shopList", "Nothing to buy — add an item above.");
     renderOneList("todo", "todoList2", "No tasks — add one above.");
@@ -661,14 +662,13 @@
   function renderOneList(list, ulId, emptyMsg) {
     const ul = el(ulId);
     const items = STATE.items.filter((x) => x.list === list).sort((a, b) => (a.ts || "").localeCompare(b.ts || ""));
-    if (items.length === 0) { ul.innerHTML = `<li class="text-slate-500 italic text-sm py-2">${emptyMsg}</li>`; return; }
+    if (items.length === 0) { ul.innerHTML = `<li class="text-sub italic text-sm py-2">${emptyMsg}</li>`; return; }
     ul.innerHTML = items.map((it) => {
-      const who = it.user ? `<span class="text-[11px] text-slate-500">${escapeHtml(it.user)}</span>` : "";
-      const pend = it._pending ? `<span class="text-[11px] text-amber-400">• saving</span>` : "";
-      return `<li class="flex items-center gap-3 rounded-xl bg-panel border border-white/5 px-3 py-3">
-                <button data-done="${it.id}" title="Mark done"
-                  class="done-btn h-6 w-6 shrink-0 rounded-full border-2 border-slate-500 hover:border-emerald-400 active:scale-90 transition grid place-items-center text-transparent hover:text-emerald-400">✓</button>
-                <span class="flex-1 text-sm text-slate-100">${escapeHtml(it.text)}</span>
+      const who = it.user ? `<span class="text-[11px] text-sub">${escapeHtml(it.user)}</span>` : "";
+      const pend = it._pending ? `<span class="text-[11px] text-[#ff9f0a]">• saving</span>` : "";
+      return `<li class="flex items-center gap-3 rounded-xl bg-card border border-line card-shadow px-3 py-3">
+                <button data-done="${it.id}" title="Mark done" class="done-btn h-6 w-6 shrink-0 rounded-full border-2 border-line hover:border-[#34c759] active:scale-90 transition grid place-items-center text-transparent hover:text-[#34c759]">✓</button>
+                <span class="flex-1 text-sm text-ink">${escapeHtml(it.text)}</span>
                 <span class="flex items-center gap-2">${who} ${pend}</span></li>`;
     }).join("");
     ul.querySelectorAll(".done-btn").forEach((b) => b.addEventListener("click", () => removeItem(b.dataset.done, b.closest("li"))));
@@ -700,66 +700,53 @@
     if (h > 0) return `${h}h ${mm}m`;
     return `${mm}m`;
   }
-
   async function sealNote() {
     if (!SPACE_ID || !KEY) return;
-    const input = el("vaultInput");
-    const text = input.value.trim();
+    const input = el("vaultInput"); const text = input.value.trim();
     if (!text) return;
     const revealAt = nextReveal().toISOString();
     input.value = "";
     showToast(`🔒 Sealed — opens ${new Date(revealAt).toLocaleDateString([], { weekday: "long" })} 5pm`);
-    try {
-      const payload = await encPayload({ text, user: ME.name, ts: new Date().toISOString(), revealAt });
-      await spaceRef().collection("notes").add(payload);
-    } catch (e) { console.warn("seal failed", e); }
+    try { await spaceRef().collection("notes").add(await encPayload({ text, user: ME.name, ts: new Date().toISOString(), revealAt })); }
+    catch (e) { console.warn("seal failed", e); }
     renderVault();
   }
-
   function renderVault() {
     const banner = el("vaultBanner"), listEl = el("vaultList"), countEl = el("sealedCount");
     const notes = STATE.notes;
     const sealed = notes.filter((n) => !isRevealed(n));
     const revealed = notes.filter((n) => isRevealed(n));
     const closeAt = isVaultOpen();
-
     if (closeAt) {
-      banner.className = "rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-4 mb-4 text-center";
-      banner.innerHTML = `<div class="text-2xl mb-1">🔓</div><div class="font-semibold text-emerald-300">The Vault is open!</div><div class="text-xs text-slate-400 mt-1">Reseals in ${fmtCountdown(closeAt - new Date())}</div>`;
+      banner.className = "rounded-2xl border border-[#34c759]/40 bg-[#e7f8ec] p-4 mb-4 text-center";
+      banner.innerHTML = `<div class="text-2xl mb-1">🔓</div><div class="font-semibold text-[#0a7d2c]">The Vault is open!</div><div class="text-xs text-sub mt-1">Reseals in ${fmtCountdown(closeAt - new Date())}</div>`;
     } else {
       const next = nextReveal();
-      banner.className = "rounded-2xl border border-indigo-500/30 bg-indigo-500/10 p-4 mb-4 text-center";
-      banner.innerHTML = `<div class="text-2xl mb-1">🔒</div><div class="font-semibold text-indigo-300">Sealed until Friday 5pm</div><div class="text-xs text-slate-400 mt-1">Opens in ${fmtCountdown(next - new Date())}</div>`;
+      banner.className = "rounded-2xl border border-accent/30 bg-accent/5 p-4 mb-4 text-center";
+      banner.innerHTML = `<div class="text-2xl mb-1">🔒</div><div class="font-semibold text-accent">Sealed until Friday 5pm</div><div class="text-xs text-sub mt-1">Opens in ${fmtCountdown(next - new Date())}</div>`;
     }
     countEl.textContent = sealed.length ? `${sealed.length} sealed note${sealed.length === 1 ? "" : "s"} waiting 🤫` : "";
-
-    if (revealed.length === 0) { listEl.innerHTML = `<li class="text-slate-500 italic text-sm py-2">No notes have opened yet. Seal one above 💌</li>`; return; }
+    if (revealed.length === 0) { listEl.innerHTML = `<li class="text-sub italic text-sm py-2">No notes have opened yet. Seal one above 💌</li>`; return; }
     revealed.sort((a, b) => new Date(b.revealAt) - new Date(a.revealAt) || (b.ts || "").localeCompare(a.ts || ""));
     listEl.innerHTML = revealed.map((n) => {
       const opened = new Date(n.revealAt).toLocaleDateString([], { month: "short", day: "numeric" });
-      return `<li class="rounded-2xl bg-panel border border-white/5 p-4">
-                <p class="text-sm text-slate-100 whitespace-pre-wrap">${escapeHtml(n.text)}</p>
-                <div class="mt-2 flex items-center justify-between text-[11px] text-slate-500"><span>— ${escapeHtml(n.user || "")}</span><span>opened ${opened}</span></div></li>`;
+      return `<li class="rounded-2xl bg-card border border-line card-shadow p-4"><p class="text-sm text-ink whitespace-pre-wrap">${escapeHtml(n.text)}</p><div class="mt-2 flex items-center justify-between text-[11px] text-sub"><span>— ${escapeHtml(n.user || "")}</span><span>opened ${opened}</span></div></li>`;
     }).join("");
   }
 
   /* ============================================================
-   *  Insights — this week, the two members side by side
+   *  Insights
    * ============================================================ */
   function startOfWeek(d = new Date()) {
     const x = new Date(d); const monIdx = (x.getDay() + 6) % 7;
     x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - monIdx); return x;
   }
   function insightChip(emoji, a, b) {
-    return `<span class="shrink-0 flex items-center gap-1.5 rounded-full bg-panel border border-white/5 px-3 py-1.5 text-xs">
-              <span class="text-base">${emoji}</span>
-              <span class="text-indigo-300 font-semibold">${a}</span><span class="text-slate-600">·</span><span class="text-emerald-300 font-semibold">${b}</span></span>`;
+    return `<span class="shrink-0 flex items-center gap-1.5 rounded-full bg-card border border-line card-shadow px-3 py-1.5 text-xs"><span class="text-base">${emoji}</span><span class="text-partnerA font-semibold">${a}</span><span class="text-sub">·</span><span class="text-partnerB font-semibold">${b}</span></span>`;
   }
   function renderInsights() {
-    const box = el("insights");
-    if (!box) return;
-    const mem = members();
-    const A = mem[0] || null, B = mem[1] || null;
+    const box = el("insights"); if (!box) return;
+    const mem = members(); const A = mem[0] || null, B = mem[1] || null;
     el("legendA").textContent = A ? A.name : "—";
     el("legendB").textContent = B ? B.name : "—";
     const ws = startOfWeek();
@@ -774,7 +761,7 @@
     });
     const na = cnt(notes, () => true, A), nb = cnt(notes, () => true, B);
     if (na + nb > 0) chips.push(insightChip("🔒", na, nb));
-    box.innerHTML = chips.length ? chips.join("") : `<span class="text-xs text-slate-500 italic px-1">No activity yet this week — log something to see insights.</span>`;
+    box.innerHTML = chips.length ? chips.join("") : `<span class="text-xs text-sub italic px-1">No activity yet this week — log something to see insights.</span>`;
   }
 
   /* ============================================================
@@ -783,14 +770,13 @@
   function anyPending() { return PENDING.logs || PENDING.items || PENDING.notes; }
   function refreshStatus() {
     const dot = el("statusDot"), txt = el("statusText");
-    let kind, label;
-    if (!navigator.onLine) { kind = ["bg-amber-400", "text-amber-300"]; label = "Offline"; }
-    else if (anyPending()) { kind = ["bg-indigo-400", "text-indigo-300"]; label = "Saving…"; }
-    else { kind = ["bg-emerald-400", "text-emerald-300"]; label = "Synced"; }
-    dot.className = `h-2 w-2 rounded-full pulse-dot ${kind[0]}`;
-    txt.className = kind[1]; txt.textContent = label;
+    let dotc, label;
+    if (!navigator.onLine) { dotc = "bg-[#ff9f0a]"; label = "Offline"; }
+    else if (anyPending()) { dotc = "bg-accent"; label = "Saving…"; }
+    else { dotc = "bg-[#34c759]"; label = "Synced"; }
+    dot.className = `h-2 w-2 rounded-full pulse-dot ${dotc}`;
+    txt.textContent = label;
   }
-
   let toastTimer;
   function showToast(msg) {
     const toast = el("toast");
@@ -804,7 +790,7 @@
    * ============================================================ */
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     const swCode = `
-      const CACHE = 'sync-habits-v8';
+      const CACHE = 'coupled-v9';
       self.addEventListener('install', (e) => { self.skipWaiting(); });
       self.addEventListener('activate', (e) => {
         e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))));
@@ -814,11 +800,8 @@
         const req = e.request;
         if (req.method !== 'GET') return;
         const url = new URL(req.url);
-        if (url.origin !== location.origin) return;      // don't cache Firebase/Google/CDN calls
-        e.respondWith(
-          fetch(req).then((res) => { const c = res.clone(); caches.open(CACHE).then((x) => x.put(req, c)).catch(()=>{}); return res; })
-            .catch(() => caches.match(req))
-        );
+        if (url.origin !== location.origin) return;
+        e.respondWith(fetch(req).then((res) => { const c = res.clone(); caches.open(CACHE).then((x) => x.put(req, c)).catch(()=>{}); return res; }).catch(() => caches.match(req)));
       });
     `;
     navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode], { type: "text/javascript" }))).catch(() => {});
