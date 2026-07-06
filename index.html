@@ -112,6 +112,8 @@
           <p id="dailyQuote" class="text-ink text-[15px] leading-relaxed italic"></p>
         </div>
 
+        <div id="habitGrid" class="grid grid-cols-2 gap-3 mb-5"></div>
+
         <div class="rounded-2xl bg-card border border-line card-shadow p-4 mb-5">
           <div class="flex items-center justify-between mb-2">
             <h3 class="font-semibold text-[15px]">How are you feeling today?</h3>
@@ -127,8 +129,6 @@
           <input id="moodNote" type="text" maxlength="140" placeholder="Anything on your mind? (optional)" class="w-full rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
           <div class="rounded-xl bg-white border border-line p-2 mt-2" style="height:150px"><canvas id="moodChart"></canvas></div>
         </div>
-
-        <div id="habitGrid" class="grid grid-cols-2 gap-3 mb-5"></div>
         <div class="rounded-2xl bg-card border border-line card-shadow p-4">
           <div class="flex items-center justify-between mb-3">
             <h3 class="font-semibold text-[15px]">Today</h3>
@@ -138,22 +138,26 @@
         </div>
       </section>
 
-      <!-- SHOPPING -->
-      <section id="tabShopping" class="tab-panel hidden">
-        <div class="flex gap-2 mb-4">
-          <input id="shopInput" type="text" enterkeyhint="done" placeholder="Add an item…" class="flex-1 rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
-          <button id="shopAdd" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-5 active:scale-95 transition">Add</button>
+      <!-- NEST (Shopping + To-Do) -->
+      <section id="tabNest" class="tab-panel hidden">
+        <div class="flex gap-1 p-1 mb-4 rounded-full bg-card border border-line">
+          <button data-sub="shopping" class="sub-btn flex-1 rounded-full py-2 text-sm font-medium">🛒 Shopping</button>
+          <button data-sub="todo" class="sub-btn flex-1 rounded-full py-2 text-sm font-medium">📝 To-Do</button>
         </div>
-        <ul id="shopList" class="space-y-2"></ul>
-      </section>
-
-      <!-- TO-DO -->
-      <section id="tabTodo" class="tab-panel hidden">
-        <div class="flex gap-2 mb-4">
-          <input id="todoInput" type="text" enterkeyhint="done" placeholder="Add a task…" class="flex-1 rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
-          <button id="todoAdd" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-5 active:scale-95 transition">Add</button>
+        <div id="nestShopping">
+          <div class="flex gap-2 mb-4">
+            <input id="shopInput" type="text" enterkeyhint="done" placeholder="Add an item…" class="flex-1 rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+            <button id="shopAdd" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-5 active:scale-95 transition">Add</button>
+          </div>
+          <ul id="shopList" class="space-y-2"></ul>
         </div>
-        <ul id="todoList2" class="space-y-2"></ul>
+        <div id="nestTodo" class="hidden">
+          <div class="flex gap-2 mb-4">
+            <input id="todoInput" type="text" enterkeyhint="done" placeholder="Add a task…" class="flex-1 rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+            <button id="todoAdd" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-5 active:scale-95 transition">Add</button>
+          </div>
+          <ul id="todoList2" class="space-y-2"></ul>
+        </div>
       </section>
 
       <!-- PLANTS -->
@@ -192,10 +196,9 @@
 
   <!-- TAB BAR -->
   <nav id="tabBar" class="hidden fixed bottom-0 inset-x-0 z-30 border-t border-line bg-card/90 backdrop-blur">
-    <div class="mx-auto max-w-md grid grid-cols-5">
+    <div class="mx-auto max-w-md grid grid-cols-4">
       <button data-tab="habits" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">🏠</span><span class="text-[11px] font-medium">Home</span></button>
-      <button data-tab="shopping" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">🛒</span><span class="text-[11px] font-medium">Shopping</span></button>
-      <button data-tab="todo" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">📝</span><span class="text-[11px] font-medium">To-Do</span></button>
+      <button data-tab="nest" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">🪺</span><span class="text-[11px] font-medium">Nest</span></button>
       <button data-tab="plants" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">🪴</span><span class="text-[11px] font-medium">Plants</span></button>
       <button data-tab="vault" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">🔒</span><span class="text-[11px] font-medium">Vault</span></button>
     </div>
@@ -388,7 +391,7 @@
   let auth = null, db = null, ME = null, SPACE_ID = null, SPACE_DOC = null;
   const STATE = { logs: [], items: [], notes: [], weights: [], plants: [], moods: [] };
   const PENDING = { logs: false, items: false, notes: false };
-  let unsub = [], ACTIVE_TAB = "habits", booting = false, weightChart = null, moodChart = null;
+  let unsub = [], ACTIVE_TAB = "habits", ACTIVE_SUB = "shopping", booting = false, weightChart = null, moodChart = null;
 
   function init() {
     buildHabitGrid(); wireUi();
@@ -421,6 +424,7 @@
     el("vaultSeal").addEventListener("click", sealNote);
     el("moodPicker").addEventListener("click", (e) => { const b = e.target.closest("[data-mood]"); if (b) logMood(parseInt(b.dataset.mood, 10)); });
     document.querySelectorAll(".tab-btn").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
+    document.querySelectorAll(".sub-btn").forEach((b) => b.addEventListener("click", () => switchSub(b.dataset.sub)));
     el("shopAdd").addEventListener("click", () => addFromInput("shopping", "shopInput"));
     el("shopInput").addEventListener("keydown", (e) => { if (e.key === "Enter") addFromInput("shopping", "shopInput"); });
     el("todoAdd").addEventListener("click", () => addFromInput("todo", "todoInput"));
@@ -544,12 +548,19 @@
   }
   function switchTab(tab) {
     ACTIVE_TAB = tab;
-    const map = { habits:"tabHabits", shopping:"tabShopping", todo:"tabTodo", plants:"tabPlants", vault:"tabVault" };
+    const map = { habits:"tabHabits", nest:"tabNest", plants:"tabPlants", vault:"tabVault" };
     Object.entries(map).forEach(([k, id]) => el(id).classList.toggle("hidden", k !== tab));
     document.querySelectorAll(".tab-btn").forEach((b) => { const on = b.dataset.tab === tab; b.classList.toggle("text-accent", on); b.classList.toggle("text-sub", !on); });
     if (tab === "vault") renderVault();
     if (tab === "plants") renderPlants();
     if (tab === "habits") renderMood();
+    if (tab === "nest") switchSub(ACTIVE_SUB);
+  }
+  function switchSub(sub) {
+    ACTIVE_SUB = sub;
+    el("nestShopping").classList.toggle("hidden", sub !== "shopping");
+    el("nestTodo").classList.toggle("hidden", sub !== "todo");
+    document.querySelectorAll(".sub-btn").forEach((b) => { const on = b.dataset.sub === sub; b.classList.toggle("bg-accent", on); b.classList.toggle("text-white", on); b.classList.toggle("text-sub", !on); });
   }
   function renderQuote() { const box = el("dailyQuote"); if (box) box.textContent = QUOTES[dayOfYear() % QUOTES.length]; }
 
