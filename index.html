@@ -24,8 +24,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 
-  <!-- ============ Tailwind via CDN ============ -->
+  <!-- ============ Tailwind + Chart.js via CDN ============ -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -71,7 +72,7 @@
         <span class="text-2xl">🏡</span>
         <h1 class="text-3xl font-logo text-accent leading-none pt-1">Coupled</h1>
       </div>
-      <button id="profileBtn" title="Settings" class="hidden h-9 w-9 rounded-full overflow-hidden border border-line active:scale-95 transition"></button>
+      <button id="profileBtn" title="Profile" class="hidden h-9 w-9 rounded-full overflow-hidden border border-line active:scale-95 transition"></button>
     </header>
 
     <!-- ===================== VIEW 0: SIGN IN ===================== -->
@@ -89,11 +90,11 @@
       <p id="authMsg" class="mt-4 text-center text-xs text-sub"></p>
     </section>
 
-    <!-- ===================== VIEW 0b: SECRET PHRASE (E2E key) ===================== -->
+    <!-- ===================== VIEW 0b: SECRET PHRASE ===================== -->
     <section id="keyView" class="hidden flex-1 flex flex-col justify-center fade-in">
       <div class="text-center mb-6">
         <div class="text-5xl mb-3">🔐</div>
-        <h2 id="keyTitle" class="text-2xl font-bold tracking-tight">Set your secret phrase</h2>
+        <h2 id="keyTitle" class="text-2xl font-bold">Set your secret phrase</h2>
         <p id="keyHint" class="text-sub mt-2 text-sm px-2">This encrypts everything end-to-end. Share it with your partner. If you both lose it, the data can't be recovered.</p>
       </div>
       <input id="keyInput" type="password" autocomplete="off" placeholder="Secret phrase"
@@ -108,8 +109,8 @@
 
       <div class="flex items-center justify-between mb-5">
         <p class="text-sub text-[15px]">Hi, <span id="currentUser" class="font-semibold text-ink">—</span></p>
-        <div id="statusPill" class="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full bg-white border border-line">
-          <span id="statusDot" class="h-2 w-2 rounded-full bg-[#34c759] pulse-dot"></span>
+        <div id="statusPill" class="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full bg-card border border-line">
+          <span id="statusDot" class="h-2 w-2 rounded-full bg-accent pulse-dot"></span>
           <span id="statusText" class="text-sub">Synced</span>
         </div>
       </div>
@@ -157,6 +158,24 @@
         <ul id="todoList2" class="space-y-2"></ul>
       </section>
 
+      <!-- ---------- TAB: PLANTS ---------- -->
+      <section id="tabPlants" class="tab-panel hidden">
+        <div class="rounded-2xl bg-card border border-line card-shadow p-4 mb-4 space-y-2">
+          <input id="pName" type="text" placeholder="Plant name (e.g. Monstera)"
+            class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+          <input id="pNotes" type="text" placeholder="Notes — care tips, spot, type…"
+            class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+          <div class="flex gap-2">
+            <input id="pCycle" type="number" min="1" inputmode="numeric" placeholder="Water every … days"
+              class="flex-1 rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+            <label class="shrink-0 grid place-items-center rounded-xl bg-white border border-line px-4 text-sm text-sub cursor-pointer">📷<input id="pPhoto" type="file" accept="image/*" class="hidden" /></label>
+          </div>
+          <p id="pPhotoName" class="text-[11px] text-sub"></p>
+          <button id="plantAdd" class="w-full rounded-full bg-accent hover:bg-accentdark text-white font-semibold py-3 active:scale-95 transition">Add plant</button>
+        </div>
+        <ul id="plantList" class="space-y-3"></ul>
+      </section>
+
       <!-- ---------- TAB: FRIDAY VAULT ---------- -->
       <section id="tabVault" class="tab-panel hidden">
         <div id="vaultBanner" class="rounded-2xl border p-4 mb-4 text-center"></div>
@@ -180,25 +199,25 @@
   </div>
 
   <!-- ===================== BOTTOM TAB BAR ===================== -->
-  <nav id="tabBar" class="hidden fixed bottom-0 inset-x-0 z-30 border-t border-line bg-white/90 backdrop-blur">
-    <div class="mx-auto max-w-md grid grid-cols-4">
+  <nav id="tabBar" class="hidden fixed bottom-0 inset-x-0 z-30 border-t border-line bg-card/90 backdrop-blur">
+    <div class="mx-auto max-w-md grid grid-cols-5">
       <button data-tab="habits" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">✅</span><span class="text-[11px] font-medium">Habits</span></button>
       <button data-tab="shopping" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">🛒</span><span class="text-[11px] font-medium">Shopping</span></button>
       <button data-tab="todo" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">📝</span><span class="text-[11px] font-medium">To-Do</span></button>
+      <button data-tab="plants" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">🪴</span><span class="text-[11px] font-medium">Plants</span></button>
       <button data-tab="vault" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">🔒</span><span class="text-[11px] font-medium">Vault</span></button>
     </div>
   </nav>
 
-  <!-- ===================== SETTINGS MODAL ===================== -->
+  <!-- ===================== PROFILE / SETTINGS MODAL ===================== -->
   <div id="settingsModal" class="hidden fixed inset-0 z-40 bg-black/30 backdrop-blur-sm px-4 py-8 overflow-y-auto">
     <div class="mx-auto max-w-md w-full rounded-2xl bg-card border border-line card-shadow p-5 fade-in">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold">Settings</h2>
+        <h2 class="text-lg font-bold">Profile</h2>
         <button id="settingsClose" class="h-9 w-9 grid place-items-center rounded-full hover:bg-appbg text-sub active:scale-95 transition">✕</button>
       </div>
 
       <!-- Signed-in identity -->
-      <label class="block text-xs font-medium text-sub mb-1">Signed in as</label>
       <div class="flex items-center gap-3 mb-5 rounded-xl bg-appbg border border-line px-3 py-3">
         <span id="meAvatar" class="h-10 w-10 rounded-full overflow-hidden shrink-0 bg-accent"></span>
         <div class="min-w-0 flex-1">
@@ -207,6 +226,17 @@
         </div>
         <button id="signOutBtn" class="shrink-0 rounded-full bg-white hover:bg-appbg border border-line px-3 py-2 text-xs active:scale-95 transition">Sign out</button>
       </div>
+
+      <!-- Weight tracker -->
+      <label class="block text-xs font-medium text-sub mb-1">Weight (kg)</label>
+      <div class="flex gap-2 mb-3">
+        <input id="wKg" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 72.5"
+          class="flex-1 rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+        <input id="wDate" type="date"
+          class="rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink focus:border-accent focus:outline-none" />
+        <button id="wSave" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-4 active:scale-95 transition">Save</button>
+      </div>
+      <div class="rounded-xl bg-white border border-line p-2 mb-5" style="height:190px"><canvas id="weightChart"></canvas></div>
 
       <!-- Your space + members -->
       <label class="block text-xs font-medium text-sub mb-1">Your space</label>
@@ -221,7 +251,7 @@
       </div>
       <p class="mt-1.5 text-[11px] text-sub">They sign in with that Google account and join automatically — sharing this same space.</p>
 
-      <!-- Import old data (one-time migration) -->
+      <!-- Import old data -->
       <div class="mt-5 border-t border-line pt-4">
         <label class="block text-xs font-medium text-sub mb-2">Import old data (one-time)</label>
         <label class="block text-[11px] text-sub mb-1">Habits CSV (habits.csv)</label>
@@ -241,9 +271,7 @@
            bg-ink text-white text-sm font-medium px-4 py-2.5 rounded-full shadow-lg"></div>
 
   <script>
-  /* ============================================================
-   *  FIREBASE CONFIG
-   * ============================================================ */
+  /* ============================================================ FIREBASE CONFIG */
   const FIREBASE_CONFIG = {
     apiKey: "AIzaSyCiAmHonwoJleeTXXIMFcJgIPRJD1ipcmM",
     authDomain: "coupled-7b948.firebaseapp.com",
@@ -305,15 +333,14 @@
   let auth = null, db = null;
   let ME = null;
   let SPACE_ID = null, SPACE_DOC = null;
-  const STATE = { logs: [], items: [], notes: [] };
+  const STATE = { logs: [], items: [], notes: [], weights: [], plants: [] };
   const PENDING = { logs: false, items: false, notes: false };
   let unsub = [];
   let ACTIVE_TAB = "habits";
   let booting = false;
+  let weightChart = null;
 
-  /* ============================================================
-   *  Boot
-   * ============================================================ */
+  /* ============================================================ Boot */
   function init() {
     buildHabitGrid();
     wireUi();
@@ -340,18 +367,20 @@
     el("inviteBtn").addEventListener("click", invitePartner);
     el("inInvite").addEventListener("keydown", (e) => { if (e.key === "Enter") invitePartner(); });
     el("importBtn").addEventListener("click", importOldData);
+    el("wSave").addEventListener("click", addWeight);
+    el("wKg").addEventListener("keydown", (e) => { if (e.key === "Enter") addWeight(); });
+    el("plantAdd").addEventListener("click", addPlant);
+    el("pPhoto").addEventListener("change", () => { const f = el("pPhoto").files[0]; el("pPhotoName").textContent = f ? ("📷 " + f.name) : ""; });
     document.querySelectorAll(".tab-btn").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
     el("shopAdd").addEventListener("click", () => addFromInput("shopping", "shopInput"));
     el("shopInput").addEventListener("keydown", (e) => { if (e.key === "Enter") addFromInput("shopping", "shopInput"); });
     el("todoAdd").addEventListener("click", () => addFromInput("todo", "todoInput"));
     el("todoInput").addEventListener("keydown", (e) => { if (e.key === "Enter") addFromInput("todo", "todoInput"); });
     el("vaultSeal").addEventListener("click", sealNote);
-    setInterval(() => { if (ACTIVE_TAB === "vault") renderVault(); }, 60000);
+    setInterval(() => { if (ACTIVE_TAB === "vault") renderVault(); if (ACTIVE_TAB === "plants") renderPlants(); }, 60000);
   }
 
-  /* ============================================================
-   *  Auth
-   * ============================================================ */
+  /* ============================================================ Auth */
   function doSignIn() {
     const provider = new firebase.auth.GoogleAuthProvider();
     el("authMsg").textContent = "Opening Google…";
@@ -361,7 +390,6 @@
       } else { el("authMsg").textContent = "Sign-in failed: " + (err && err.message ? err.message : err); }
     });
   }
-
   async function handleAuth(user) {
     teardownListeners();
     KEY = null;
@@ -371,9 +399,7 @@
     try { await ensureSpace(); await openSpaceKey(); }
     catch (err) { showAuth("Couldn't open your space: " + (err && err.message ? err.message : err)); }
   }
-
   function doSignOut() { KEY = null; if (auth) auth.signOut(); }
-
   async function openSpaceKey() {
     KEY = null;
     if (!SPACE_DOC || !SPACE_DOC.encSalt) { showKey("create"); return; }
@@ -440,7 +466,6 @@
       SPACE_ID = ref.id; SPACE_DOC = doc;
     } finally { booting = false; }
   }
-
   function spaceRef() { return db.collection("spaces").doc(SPACE_ID); }
 
   function startListeners() {
@@ -458,12 +483,18 @@
       STATE.notes = await Promise.all(snap.docs.map(decDoc)); PENDING.notes = snap.metadata.hasPendingWrites;
       renderVault(); renderInsights(); refreshStatus();
     }));
+    unsub.push(spaceRef().collection("weights").onSnapshot({ includeMetadataChanges: true }, async (snap) => {
+      STATE.weights = await Promise.all(snap.docs.map(decDoc));
+      if (!el("settingsModal").classList.contains("hidden")) renderWeightChart();
+    }));
+    unsub.push(spaceRef().collection("plants").onSnapshot({ includeMetadataChanges: true }, async (snap) => {
+      STATE.plants = await Promise.all(snap.docs.map(decDoc));
+      renderPlants();
+    }));
   }
   function teardownListeners() { unsub.forEach((u) => { try { u(); } catch (e) {} }); unsub = []; }
 
-  /* ============================================================
-   *  Views
-   * ============================================================ */
+  /* ============================================================ Views */
   function avatarHtml(size) {
     if (ME && ME.photo) return `<img src="${ME.photo}" referrerpolicy="no-referrer" class="h-full w-full object-cover" />`;
     const initial = ((ME && ME.name) || "?").trim()[0].toUpperCase();
@@ -494,12 +525,11 @@
     el("keyView").classList.add("hidden"); el("keyView").classList.remove("flex");
     el("appView").classList.remove("hidden"); el("profileBtn").classList.remove("hidden"); el("tabBar").classList.remove("hidden");
     switchTab(ACTIVE_TAB);
-    renderToday(); renderLists(); renderVault(); renderInsights(); refreshStatus();
+    renderToday(); renderLists(); renderVault(); renderPlants(); renderInsights(); refreshStatus();
   }
-
   function switchTab(tab) {
     ACTIVE_TAB = tab;
-    const map = { habits: "tabHabits", shopping: "tabShopping", todo: "tabTodo", vault: "tabVault" };
+    const map = { habits: "tabHabits", shopping: "tabShopping", todo: "tabTodo", plants: "tabPlants", vault: "tabVault" };
     Object.entries(map).forEach(([k, id]) => el(id).classList.toggle("hidden", k !== tab));
     document.querySelectorAll(".tab-btn").forEach((b) => {
       const on = b.dataset.tab === tab;
@@ -507,21 +537,21 @@
       b.classList.toggle("text-sub", !on);
     });
     if (tab === "vault") renderVault();
+    if (tab === "plants") renderPlants();
   }
 
-  /* ============================================================
-   *  Settings / invite / members / import
-   * ============================================================ */
+  /* ============================================================ Profile / invite / members */
   function openSettings() {
     el("meName").textContent = ME ? ME.name : "—";
     el("meEmail").textContent = ME ? ME.email : "—";
     el("meAvatar").innerHTML = avatarHtml("text-base");
+    if (!el("wDate").value) el("wDate").value = todayStr();
     el("settingsMsg").textContent = "";
     renderMembers();
     el("settingsModal").classList.remove("hidden");
+    renderWeightChart();
   }
   function closeSettings() { el("settingsModal").classList.add("hidden"); }
-
   function members() {
     const mp = (SPACE_DOC && SPACE_DOC.memberProfiles) || {};
     const ids = (SPACE_DOC && SPACE_DOC.members) || [];
@@ -531,16 +561,15 @@
     const ul = el("membersList");
     if (!ul || !SPACE_DOC) return;
     const rows = members().map((m) =>
-      `<li class="flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-[#34c759]"></span>
+      `<li class="flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-accent"></span>
         <span class="text-ink">${escapeHtml(m.name)}</span>
         ${m.uid === ME.uid ? '<span class="text-[10px] text-sub">(you)</span>' : ""}
         ${m.uid === SPACE_DOC.ownerUid ? '<span class="text-[10px] text-accent">owner</span>' : ""}</li>`
     );
     const invited = (SPACE_DOC.invitedEmails || []).filter((e) => !(SPACE_DOC.memberEmails || []).includes(e));
-    invited.forEach((e) => rows.push(`<li class="flex items-center gap-2 text-sub"><span class="h-1.5 w-1.5 rounded-full bg-[#ff9f0a]"></span>${escapeHtml(e)} <span class="text-[10px]">invited</span></li>`));
+    invited.forEach((e) => rows.push(`<li class="flex items-center gap-2 text-sub"><span class="h-1.5 w-1.5 rounded-full bg-partnerB"></span>${escapeHtml(e)} <span class="text-[10px]">invited</span></li>`));
     ul.innerHTML = rows.join("");
   }
-
   async function invitePartner() {
     const email = el("inInvite").value.trim().toLowerCase();
     const msg = el("settingsMsg");
@@ -554,7 +583,120 @@
     } catch (err) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Invite failed: " + (err && err.message ? err.message : err); }
   }
 
-  /* ---- one-time migration from old habits.csv + lists.json ---- */
+  /* ============================================================ Weight tracker */
+  async function addWeight() {
+    const msg = el("settingsMsg");
+    if (!SPACE_ID || !KEY) return;
+    const kg = parseFloat(el("wKg").value);
+    const date = el("wDate").value || todayStr();
+    if (!kg || kg <= 0 || kg > 500) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Enter a valid weight in kg."; return; }
+    try {
+      await putEnc("weights", "w-" + ME.uid + "-" + date, { date, kg }, ME.uid);
+      el("wKg").value = "";
+      msg.className = "mt-3 text-center text-xs text-[#0a7d2c]"; msg.textContent = `Saved ${kg} kg for ${date} ✓`;
+    } catch (err) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Save failed: " + (err && err.message ? err.message : err); }
+  }
+  function renderWeightChart() {
+    const canvas = el("weightChart");
+    if (!canvas || typeof Chart === "undefined") return;
+    const entries = STATE.weights.filter((w) => w.date && typeof w.kg === "number");
+    const dates = [...new Set(entries.map((w) => w.date))].sort();
+    const mem = members().slice(0, 2);
+    const colors = ["#00897b", "#ff7043"];
+    const datasets = mem.map((m, i) => ({
+      label: m.name,
+      data: dates.map((d) => { const e = entries.find((w) => w.uid === m.uid && w.date === d); return e ? e.kg : null; }),
+      borderColor: colors[i], backgroundColor: colors[i], tension: 0.3, spanGaps: true, pointRadius: 3, borderWidth: 2,
+    }));
+    if (weightChart) weightChart.destroy();
+    if (dates.length === 0) { return; }
+    weightChart = new Chart(canvas.getContext("2d"), {
+      type: "line",
+      data: { labels: dates.map((d) => d.slice(5)), datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: mem.length > 1, labels: { boxWidth: 10, font: { family: "Quicksand" } } } },
+        scales: {
+          y: { ticks: { font: { family: "Quicksand" } }, grid: { color: "#eadfce" } },
+          x: { ticks: { font: { family: "Quicksand" }, maxTicksLimit: 6 }, grid: { display: false } },
+        },
+      },
+    });
+  }
+
+  /* ============================================================ Plants */
+  function compressImage(file, maxDim = 640, quality = 0.6) {
+    return new Promise((resolve, reject) => {
+      const img = new Image(); const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+        const c = document.createElement("canvas"); c.width = w; c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject; img.src = url;
+    });
+  }
+  async function addPlant() {
+    if (!SPACE_ID || !KEY) return;
+    const name = el("pName").value.trim();
+    if (!name) { showToast("Give the plant a name"); return; }
+    const notes = el("pNotes").value.trim();
+    const cycle = Math.max(1, parseInt(el("pCycle").value, 10) || 7);
+    const file = el("pPhoto").files[0];
+    el("plantAdd").disabled = true; el("plantAdd").textContent = "Adding…";
+    try {
+      let photo = "";
+      if (file) { try { photo = await compressImage(file); } catch (e) { photo = ""; } }
+      await spaceRef().collection("plants").add(await encPayload({ name, notes, cycle, lastWatered: new Date().toISOString(), photo }));
+      el("pName").value = ""; el("pNotes").value = ""; el("pCycle").value = ""; el("pPhoto").value = ""; el("pPhotoName").textContent = "";
+      showToast("🪴 Plant added");
+    } catch (e) { showToast("Couldn't add plant"); console.warn(e); }
+    el("plantAdd").disabled = false; el("plantAdd").textContent = "Add plant";
+  }
+  async function waterPlant(p) {
+    try { await putEnc("plants", p.id, { name: p.name, notes: p.notes || "", cycle: p.cycle || 7, lastWatered: new Date().toISOString(), photo: p.photo || "" }, p.uid || ME.uid); showToast("💧 Watered " + p.name); }
+    catch (e) { console.warn("water failed", e); }
+  }
+  function deletePlant(id) { if (SPACE_ID) spaceRef().collection("plants").doc(id).delete().catch((e) => console.warn(e)); }
+  function dueInfo(p) {
+    const last = new Date(p.lastWatered || Date.now());
+    const due = new Date(last.getTime() + (p.cycle || 7) * 86400000);
+    const days = Math.ceil((due.setHours(0,0,0,0) - new Date().setHours(0,0,0,0)) / 86400000);
+    if (days < 0) return { text: `Overdue by ${-days}d`, cls: "text-partnerB", dot: "bg-partnerB", days };
+    if (days === 0) return { text: "Water today", cls: "text-partnerB", dot: "bg-partnerB", days };
+    if (days === 1) return { text: "Due tomorrow", cls: "text-sub", dot: "bg-accent", days };
+    return { text: `Due in ${days}d`, cls: "text-sub", dot: "bg-accent", days };
+  }
+  function renderPlants() {
+    const ul = el("plantList");
+    if (!ul) return;
+    const plants = [...STATE.plants].sort((a, b) => dueInfo(a).days - dueInfo(b).days);
+    if (plants.length === 0) { ul.innerHTML = `<li class="text-sub italic text-sm py-2">No plants yet — add one above 🌱</li>`; return; }
+    ul.innerHTML = plants.map((p) => {
+      const d = dueInfo(p);
+      const img = p.photo ? `<img src="${p.photo}" class="h-16 w-16 rounded-xl object-cover shrink-0" />` : `<div class="h-16 w-16 rounded-xl bg-appbg grid place-items-center text-2xl shrink-0">🪴</div>`;
+      return `<li class="rounded-2xl bg-card border border-line card-shadow p-3 flex gap-3 items-center">
+        ${img}
+        <div class="min-w-0 flex-1">
+          <div class="font-semibold text-ink truncate">${escapeHtml(p.name || "Plant")}</div>
+          ${p.notes ? `<div class="text-[12px] text-sub truncate">${escapeHtml(p.notes)}</div>` : ""}
+          <div class="mt-1 flex items-center gap-1.5 text-[12px] ${d.cls}"><span class="h-1.5 w-1.5 rounded-full ${d.dot}"></span>${d.text} · every ${p.cycle || 7}d</div>
+        </div>
+        <div class="flex flex-col gap-1 shrink-0">
+          <button data-water="${p.id}" class="rounded-full bg-accent hover:bg-accentdark text-white text-xs font-semibold px-3 py-2 active:scale-95 transition">💧 Water</button>
+          <button data-delp="${p.id}" class="rounded-full border border-line text-sub text-[11px] px-3 py-1.5 active:scale-95 transition">Delete</button>
+        </div></li>`;
+    }).join("");
+    ul.querySelectorAll("[data-water]").forEach((b) => b.addEventListener("click", () => {
+      const p = STATE.plants.find((x) => x.id === b.dataset.water); if (p) waterPlant(p);
+    }));
+    ul.querySelectorAll("[data-delp]").forEach((b) => b.addEventListener("click", () => deletePlant(b.dataset.delp)));
+  }
+
+  /* ---- one-time migration ---- */
   function tinyHash(s) { let h = 0; for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; } return (h >>> 0).toString(36); }
   function docId(raw) { return String(raw).replace(/[^\w-]/g, "_").slice(0, 120); }
   function parseCsv(text) {
@@ -609,9 +751,7 @@
     } catch (err) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Import failed: " + (err && err.message ? err.message : err); }
   }
 
-  /* ============================================================
-   *  Habits
-   * ============================================================ */
+  /* ============================================================ Habits */
   function buildHabitGrid() {
     const grid = el("habitGrid");
     grid.innerHTML = "";
@@ -645,14 +785,12 @@
       const h = HABITS.find((x) => x.label === l.habit);
       const emoji = h ? h.emoji : "•";
       const time = new Date(l.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      const badge = l._pending ? `<span class="text-[#ff9f0a] text-[11px]">• saving</span>` : `<span class="text-[#34c759] text-[11px]">✓</span>`;
+      const badge = l._pending ? `<span class="text-[#ff9f0a] text-[11px]">• saving</span>` : `<span class="text-accent text-[11px]">✓</span>`;
       return `<li class="flex items-center justify-between"><span class="flex items-center gap-2"><span>${emoji}</span><span>${escapeHtml(l.habit)}</span></span><span class="flex items-center gap-3 text-sub text-xs">${time} ${badge}</span></li>`;
     }).join("");
   }
 
-  /* ============================================================
-   *  Shopping / To-Do
-   * ============================================================ */
+  /* ============================================================ Shopping / To-Do */
   async function addFromInput(list, inputId) {
     const input = el(inputId); const text = input.value.trim();
     if (!text || !SPACE_ID || !KEY) return;
@@ -676,16 +814,14 @@
       const who = it.user ? `<span class="text-[11px] text-sub">${escapeHtml(it.user)}</span>` : "";
       const pend = it._pending ? `<span class="text-[11px] text-[#ff9f0a]">• saving</span>` : "";
       return `<li class="flex items-center gap-3 rounded-xl bg-card border border-line card-shadow px-3 py-3">
-                <button data-done="${it.id}" title="Mark done" class="done-btn h-6 w-6 shrink-0 rounded-full border-2 border-line hover:border-[#34c759] active:scale-90 transition grid place-items-center text-transparent hover:text-[#34c759]">✓</button>
+                <button data-done="${it.id}" title="Mark done" class="done-btn h-6 w-6 shrink-0 rounded-full border-2 border-line hover:border-accent active:scale-90 transition grid place-items-center text-transparent hover:text-accent">✓</button>
                 <span class="flex-1 text-sm text-ink">${escapeHtml(it.text)}</span>
                 <span class="flex items-center gap-2">${who} ${pend}</span></li>`;
     }).join("");
     ul.querySelectorAll(".done-btn").forEach((b) => b.addEventListener("click", () => removeItem(b.dataset.done, b.closest("li"))));
   }
 
-  /* ============================================================
-   *  Friday Vault
-   * ============================================================ */
+  /* ============================================================ Friday Vault */
   function nextReveal(from = new Date()) {
     const d = new Date(from);
     let days = (VAULT_REVEAL_DOW - d.getDay() + 7) % 7;
@@ -727,12 +863,12 @@
     const revealed = notes.filter((n) => isRevealed(n));
     const closeAt = isVaultOpen();
     if (closeAt) {
-      banner.className = "rounded-2xl border border-[#34c759]/40 bg-[#e7f8ec] p-4 mb-4 text-center";
-      banner.innerHTML = `<div class="text-2xl mb-1">🔓</div><div class="font-semibold text-[#0a7d2c]">The Vault is open!</div><div class="text-xs text-sub mt-1">Reseals in ${fmtCountdown(closeAt - new Date())}</div>`;
+      banner.className = "rounded-2xl border border-accent/40 bg-accent/10 p-4 mb-4 text-center";
+      banner.innerHTML = `<div class="text-2xl mb-1">🔓</div><div class="font-semibold text-accent">The Vault is open!</div><div class="text-xs text-sub mt-1">Reseals in ${fmtCountdown(closeAt - new Date())}</div>`;
     } else {
       const next = nextReveal();
-      banner.className = "rounded-2xl border border-accent/30 bg-accent/5 p-4 mb-4 text-center";
-      banner.innerHTML = `<div class="text-2xl mb-1">🔒</div><div class="font-semibold text-accent">Sealed until Friday 5pm</div><div class="text-xs text-sub mt-1">Opens in ${fmtCountdown(next - new Date())}</div>`;
+      banner.className = "rounded-2xl border border-line bg-white p-4 mb-4 text-center";
+      banner.innerHTML = `<div class="text-2xl mb-1">🔒</div><div class="font-semibold text-ink">Sealed until Friday 5pm</div><div class="text-xs text-sub mt-1">Opens in ${fmtCountdown(next - new Date())}</div>`;
     }
     countEl.textContent = sealed.length ? `${sealed.length} sealed note${sealed.length === 1 ? "" : "s"} waiting 🤫` : "";
     if (revealed.length === 0) { listEl.innerHTML = `<li class="text-sub italic text-sm py-2">No notes have opened yet. Seal one above 💌</li>`; return; }
@@ -743,9 +879,7 @@
     }).join("");
   }
 
-  /* ============================================================
-   *  Insights
-   * ============================================================ */
+  /* ============================================================ Insights */
   function startOfWeek(d = new Date()) {
     const x = new Date(d); const monIdx = (x.getDay() + 6) % 7;
     x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - monIdx); return x;
@@ -773,16 +907,14 @@
     box.innerHTML = chips.length ? chips.join("") : `<span class="text-xs text-sub italic px-1">No activity yet this week — log something to see insights.</span>`;
   }
 
-  /* ============================================================
-   *  Status + toast
-   * ============================================================ */
+  /* ============================================================ Status + toast */
   function anyPending() { return PENDING.logs || PENDING.items || PENDING.notes; }
   function refreshStatus() {
     const dot = el("statusDot"), txt = el("statusText");
     let dotc, label;
     if (!navigator.onLine) { dotc = "bg-[#ff9f0a]"; label = "Offline"; }
     else if (anyPending()) { dotc = "bg-accent"; label = "Saving…"; }
-    else { dotc = "bg-[#34c759]"; label = "Synced"; }
+    else { dotc = "bg-accent"; label = "Synced"; }
     dot.className = `h-2 w-2 rounded-full pulse-dot ${dotc}`;
     txt.textContent = label;
   }
@@ -794,12 +926,10 @@
     toastTimer = setTimeout(() => (toast.style.opacity = "0"), 1600);
   }
 
-  /* ============================================================
-   *  Service worker (network-first; caches same-origin shell only)
-   * ============================================================ */
+  /* ============================================================ Service worker */
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     const swCode = `
-      const CACHE = 'coupled-v9';
+      const CACHE = 'coupled-v10';
       self.addEventListener('install', (e) => { self.skipWaiting(); });
       self.addEventListener('activate', (e) => {
         e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))));
