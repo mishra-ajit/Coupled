@@ -75,7 +75,7 @@
 
     <header class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-2">
-        <span class="text-2xl">🏡</span>
+        <img src="icon-192.png" alt="Coupled" class="h-8 w-8 rounded-lg" />
         <h1 class="text-3xl font-logo text-accent leading-none pt-1">Coupled</h1>
       </div>
       <button id="profileBtn" title="Profile" class="hidden h-9 w-9 rounded-full overflow-hidden border border-line active:scale-95 transition"></button>
@@ -84,7 +84,7 @@
     <!-- SIGN IN -->
     <section id="authView" class="hidden flex-1 flex flex-col justify-center fade-in">
       <div class="text-center mb-8">
-        <div class="text-6xl mb-4">🏡</div>
+        <img src="icon-192.png" alt="Coupled" class="mx-auto mb-4 h-20 w-20 rounded-2xl card-shadow" />
         <h2 class="text-5xl font-logo text-accent leading-tight pb-1">Coupled</h2>
         <p class="text-sub mt-2 text-[15px]">A private, shared space for two. Sign in to begin.</p>
       </div>
@@ -263,6 +263,14 @@
       </div>
       <div class="rounded-xl bg-white border border-line p-2 mb-5" style="height:190px"><canvas id="weightChart"></canvas></div>
 
+      <label class="block text-xs font-medium text-sub mb-1">Things you track (shown on Home)</label>
+      <ul id="habitCfgList" class="mb-2 space-y-1.5"></ul>
+      <div class="flex gap-2 mb-5">
+        <input id="habEmoji" maxlength="4" placeholder="🌸" class="w-14 text-center rounded-xl bg-white border border-line px-2 py-2.5 text-lg focus:border-accent focus:outline-none" />
+        <input id="habLabel" type="text" maxlength="24" placeholder="Add something to track…" class="flex-1 rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+        <button id="habAdd" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-4 active:scale-95 transition">Add</button>
+      </div>
+
       <label class="block text-xs font-medium text-sub mb-1">Your space</label>
       <ul id="membersList" class="mb-4 space-y-1.5 text-sm"></ul>
 
@@ -424,7 +432,7 @@
   }
 
   let auth = null, db = null, ME = null, SPACE_ID = null, SPACE_DOC = null;
-  const STATE = { logs: [], items: [], notes: [], weights: [], plants: [], moods: [], ai: [] };
+  const STATE = { logs: [], items: [], notes: [], weights: [], plants: [], moods: [], ai: [], habits: [] };
   const PENDING = { logs: false, items: false, notes: false };
   let unsub = [], ACTIVE_TAB = "habits", ACTIVE_SUB = "shopping", booting = false, weightChart = null, moodChart = null;
 
@@ -459,6 +467,8 @@
     el("vaultSeal").addEventListener("click", sealNote);
     el("moodPicker").addEventListener("click", (e) => { const b = e.target.closest("[data-mood]"); if (b) logMood(parseInt(b.dataset.mood, 10)); });
     el("aiBtn").addEventListener("click", generateInsight);
+    el("habAdd").addEventListener("click", addHabit);
+    el("habLabel").addEventListener("keydown", (e) => { if (e.key === "Enter") addHabit(); });
     document.querySelectorAll(".tab-btn").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
     document.querySelectorAll(".sub-btn").forEach((b) => b.addEventListener("click", () => switchSub(b.dataset.sub)));
     el("shopAdd").addEventListener("click", () => addFromInput("shopping", "shopInput"));
@@ -551,6 +561,7 @@
     unsub.push(spaceRef().collection("plants").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.plants = await Promise.all(s.docs.map(decDoc)); renderPlants(); }));
     unsub.push(spaceRef().collection("moods").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.moods = await Promise.all(s.docs.map(decDoc)); renderMood(); }));
     unsub.push(spaceRef().collection("ai").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.ai = await Promise.all(s.docs.map(decDoc)); renderAI(); }));
+    unsub.push(spaceRef().collection("habits").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.habits = await Promise.all(s.docs.map(decDoc)); if (STATE.habits.length === 0) seedDefaultHabits(); buildHabitGrid(); renderToday(); renderInsights(); renderHabitsSettings(); }));
   }
   function teardownListeners() { unsub.forEach((u) => { try { u(); } catch (e) {} }); unsub = []; }
 
@@ -608,7 +619,7 @@
     el("meAvatar").innerHTML = avatarHtml("text-base");
     if (!el("wDate").value) el("wDate").value = todayStr();
     el("settingsMsg").textContent = "";
-    renderMembers(); el("settingsModal").classList.remove("hidden"); renderWeightChart();
+    renderMembers(); renderHabitsSettings(); el("settingsModal").classList.remove("hidden"); renderWeightChart();
   }
   function closeSettings() { el("settingsModal").classList.add("hidden"); }
   function members() {
@@ -804,9 +815,34 @@ Plants overdue: ${overdue}`;
     } catch (err) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Import failed: " + (err && err.message ? err.message : err); }
   }
 
+  /* ---------- Configurable habits ---------- */
+  function habitList() { return STATE.habits.length ? [...STATE.habits].sort((a, b) => (a.order || 0) - (b.order || 0)) : HABITS; }
+  async function seedDefaultHabits() {
+    if (!SPACE_ID || !KEY || !SPACE_DOC || SPACE_DOC.habitsSeeded || ME.uid !== SPACE_DOC.ownerUid) return;
+    try {
+      let i = 0;
+      for (const h of HABITS) { await spaceRef().collection("habits").add(await encPayload({ emoji: h.emoji, label: h.label, order: Date.now() + (i++) })); }
+      await spaceRef().update({ habitsSeeded: true }); SPACE_DOC.habitsSeeded = true;
+    } catch (e) { console.warn("seed habits failed", e); }
+  }
+  async function addHabit() {
+    if (!SPACE_ID || !KEY) return;
+    const emoji = (el("habEmoji").value.trim() || "✅").slice(0, 4);
+    const label = el("habLabel").value.trim();
+    if (!label) { showToast("Name what to track"); return; }
+    el("habEmoji").value = ""; el("habLabel").value = "";
+    try { await spaceRef().collection("habits").add(await encPayload({ emoji, label, order: Date.now() })); showToast(`Added ${emoji} ${label}`); }
+    catch (e) { console.warn("add habit failed", e); }
+  }
+  function removeHabit(id) { if (SPACE_ID) spaceRef().collection("habits").doc(id).delete().catch((e) => console.warn(e)); }
+  function renderHabitsSettings() {
+    const ul = el("habitCfgList"); if (!ul) return;
+    ul.innerHTML = habitList().map((h) => `<li class="flex items-center gap-2 rounded-xl bg-appbg border border-line px-3 py-2"><span class="text-xl">${escapeHtml(h.emoji || "•")}</span><span class="flex-1 text-sm text-ink">${escapeHtml(h.label || "")}</span>${h.id ? `<button data-delh="${h.id}" class="text-sub text-xs px-2 py-1 rounded-lg hover:bg-white active:scale-95 transition">Remove</button>` : `<span class="text-[10px] text-sub">default</span>`}</li>`).join("");
+    ul.querySelectorAll("[data-delh]").forEach((b) => b.addEventListener("click", () => removeHabit(b.dataset.delh)));
+  }
   function buildHabitGrid() {
     const grid = el("habitGrid"); grid.innerHTML = "";
-    HABITS.forEach((h) => { const btn = document.createElement("button"); btn.className = "habit-btn rounded-2xl bg-card border border-line card-shadow py-6 flex flex-col items-center gap-2 focus:outline-none"; btn.innerHTML = `<span class="text-3xl">${h.emoji}</span><span class="text-sm font-medium text-ink">${h.label}</span>`; btn.addEventListener("click", () => logHabit(h, btn)); grid.appendChild(btn); });
+    habitList().forEach((h) => { const btn = document.createElement("button"); btn.className = "habit-btn rounded-2xl bg-card border border-line card-shadow py-6 flex flex-col items-center gap-2 focus:outline-none"; btn.innerHTML = `<span class="text-3xl">${escapeHtml(h.emoji || "✅")}</span><span class="text-sm font-medium text-ink">${escapeHtml(h.label || "")}</span>`; btn.addEventListener("click", () => logHabit(h, btn)); grid.appendChild(btn); });
   }
   async function logHabit(habit, btn) {
     if (!SPACE_ID || !KEY) return; flash(btn); showToast(`${habit.emoji} ${habit.label} logged`);
@@ -818,7 +854,7 @@ Plants overdue: ${overdue}`;
     el("todayCount").textContent = `${mine.length} logged`;
     if (mine.length === 0) { el("todayList").innerHTML = `<li class="text-sub italic">Nothing logged yet — tap a habit above.</li>`; return; }
     mine.sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""));
-    el("todayList").innerHTML = mine.map((l) => { const h = HABITS.find((x) => x.label === l.habit); const emoji = h ? h.emoji : "•"; const time = new Date(l.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); const badge = l._pending ? `<span class="text-[#ff9f0a] text-[11px]">• saving</span>` : `<span class="text-accent text-[11px]">✓</span>`; return `<li class="flex items-center justify-between"><span class="flex items-center gap-2"><span>${emoji}</span><span>${escapeHtml(l.habit)}</span></span><span class="flex items-center gap-3 text-sub text-xs">${time} ${badge}</span></li>`; }).join("");
+    el("todayList").innerHTML = mine.map((l) => { const h = habitList().find((x) => x.label === l.habit); const emoji = h ? h.emoji : "•"; const time = new Date(l.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); const badge = l._pending ? `<span class="text-[#ff9f0a] text-[11px]">• saving</span>` : `<span class="text-accent text-[11px]">✓</span>`; return `<li class="flex items-center justify-between"><span class="flex items-center gap-2"><span>${emoji}</span><span>${escapeHtml(l.habit)}</span></span><span class="flex items-center gap-3 text-sub text-xs">${time} ${badge}</span></li>`; }).join("");
   }
 
   async function addFromInput(list, inputId) {
@@ -864,7 +900,7 @@ Plants overdue: ${overdue}`;
     el("legendA").textContent = A ? A.name : "—"; el("legendB").textContent = B ? B.name : "—";
     const ws = startOfWeek(); const logs = STATE.logs.filter((l) => new Date(l.timestamp) >= ws); const notes = STATE.notes.filter((n) => n.ts && new Date(n.ts) >= ws);
     const cnt = (arr, pred, u) => (u ? arr.filter((x) => pred(x) && x.uid === u.uid).length : 0); const chips = [];
-    HABITS.forEach((h) => { const a = cnt(logs, (l) => l.habit === h.label, A); const b = cnt(logs, (l) => l.habit === h.label, B); if (a + b > 0) chips.push(insightChip(h.emoji, a, b)); });
+    habitList().forEach((h) => { const a = cnt(logs, (l) => l.habit === h.label, A); const b = cnt(logs, (l) => l.habit === h.label, B); if (a + b > 0) chips.push(insightChip(h.emoji, a, b)); });
     const na = cnt(notes, () => true, A), nb = cnt(notes, () => true, B); if (na + nb > 0) chips.push(insightChip("🔒", na, nb));
     box.innerHTML = chips.length ? chips.join("") : `<span class="text-xs text-sub italic px-1">No activity yet this week — log something to see insights.</span>`;
   }
