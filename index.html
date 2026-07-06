@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Coupled</title>
 
-  <!-- ============ PWA / Add-to-Home-Screen ============ -->
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#f2ece0" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -14,34 +13,22 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
 
-  <!-- ============ Fonts ============ -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-  <!-- ============ Firebase (compat SDK — global `firebase`) ============ -->
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 
-  <!-- ============ Tailwind + Chart.js via CDN ============ -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script>
     tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            appbg: '#f2ece0', card: '#fbf7ef', ink: '#2d3e46',
-            sub: '#7a8a90', accent: '#00897b', accentdark: '#00695c',
-            line: '#e4dccb', partnerA: '#00897b', partnerB: '#ff7043',
-          },
-          fontFamily: {
-            sans: ['Quicksand','ui-rounded','-apple-system','Segoe UI','Roboto','sans-serif'],
-            logo: ['Pacifico','cursive'],
-          },
-        },
-      },
+      theme: { extend: {
+        colors: { appbg:'#f2ece0', card:'#fbf7ef', ink:'#2d3e46', sub:'#7a8a90', accent:'#00897b', accentdark:'#00695c', line:'#e4dccb', partnerA:'#00897b', partnerB:'#ff7043' },
+        fontFamily: { sans:['Quicksand','ui-rounded','-apple-system','Segoe UI','Roboto','sans-serif'], logo:['Pacifico','cursive'] },
+      } },
     };
   </script>
 
@@ -63,10 +50,8 @@
 </head>
 
 <body class="bg-appbg text-ink font-sans min-h-screen antialiased">
-
   <div class="mx-auto max-w-md px-4 py-6 min-h-screen flex flex-col">
 
-    <!-- ===================== HEADER ===================== -->
     <header class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-2">
         <span class="text-2xl">🏡</span>
@@ -75,38 +60,35 @@
       <button id="profileBtn" title="Profile" class="hidden h-9 w-9 rounded-full overflow-hidden border border-line active:scale-95 transition"></button>
     </header>
 
-    <!-- ===================== VIEW 0: SIGN IN ===================== -->
+    <!-- SIGN IN -->
     <section id="authView" class="hidden flex-1 flex flex-col justify-center fade-in">
       <div class="text-center mb-8">
         <div class="text-6xl mb-4">🏡</div>
         <h2 class="text-5xl font-logo text-accent leading-tight pb-1">Coupled</h2>
         <p class="text-sub mt-2 text-[15px]">A private, shared space for two. Sign in to begin.</p>
       </div>
-      <button id="signInBtn"
-        class="mx-auto flex items-center gap-3 rounded-full bg-white text-ink font-medium px-6 py-3 border border-line card-shadow active:scale-95 transition">
+      <button id="signInBtn" class="mx-auto flex items-center gap-3 rounded-full bg-white text-ink font-medium px-6 py-3 border border-line card-shadow active:scale-95 transition">
         <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
         Sign in with Google
       </button>
       <p id="authMsg" class="mt-4 text-center text-xs text-sub"></p>
     </section>
 
-    <!-- ===================== VIEW 0b: SECRET PHRASE ===================== -->
+    <!-- SECRET PHRASE -->
     <section id="keyView" class="hidden flex-1 flex flex-col justify-center fade-in">
       <div class="text-center mb-6">
         <div class="text-5xl mb-3">🔐</div>
         <h2 id="keyTitle" class="text-2xl font-bold">Set your secret phrase</h2>
         <p id="keyHint" class="text-sub mt-2 text-sm px-2">This encrypts everything end-to-end. Share it with your partner. If you both lose it, the data can't be recovered.</p>
       </div>
-      <input id="keyInput" type="password" autocomplete="off" placeholder="Secret phrase"
-        class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+      <input id="keyInput" type="password" autocomplete="off" placeholder="Secret phrase" class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
       <button id="keyBtn" class="mt-3 rounded-full bg-accent hover:bg-accentdark text-white font-semibold py-3 active:scale-95 transition">Unlock</button>
       <button id="keySignOut" class="mt-3 text-xs text-sub underline">Sign out</button>
       <p id="keyMsg" class="mt-3 text-center text-xs"></p>
     </section>
 
-    <!-- ===================== MAIN APP ===================== -->
+    <!-- MAIN -->
     <main id="appView" class="hidden flex-1 fade-in pb-28">
-
       <div class="flex items-center justify-between mb-5">
         <p class="text-sub text-[15px]">Hi, <span id="currentUser" class="font-semibold text-ink">—</span></p>
         <div id="statusPill" class="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full bg-card border border-line">
@@ -115,7 +97,6 @@
         </div>
       </div>
 
-      <!-- ---------- INSIGHTS ---------- -->
       <div class="mb-5">
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-xs font-semibold text-sub uppercase tracking-wide">This week</h3>
@@ -124,50 +105,64 @@
         <div id="insights" class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1"></div>
       </div>
 
-      <!-- ---------- TAB: HABITS ---------- -->
+      <!-- HABITS (home) -->
       <section id="tabHabits" class="tab-panel">
+        <div class="rounded-2xl bg-accent/10 border border-accent/20 p-4 mb-5 text-center">
+          <div class="text-[11px] uppercase tracking-wide text-accent font-semibold mb-1">Today, for us 💚</div>
+          <p id="dailyQuote" class="text-ink text-[15px] leading-relaxed italic"></p>
+        </div>
+
+        <div class="rounded-2xl bg-card border border-line card-shadow p-4 mb-5">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-semibold text-[15px]">How are you feeling today?</h3>
+            <span id="moodToday" class="text-xs text-sub"></span>
+          </div>
+          <div id="moodPicker" class="flex justify-between gap-1 mb-2">
+            <button data-mood="1" class="mood-btn flex-1 text-2xl py-2 rounded-xl hover:bg-appbg transition">😢</button>
+            <button data-mood="2" class="mood-btn flex-1 text-2xl py-2 rounded-xl hover:bg-appbg transition">🙁</button>
+            <button data-mood="3" class="mood-btn flex-1 text-2xl py-2 rounded-xl hover:bg-appbg transition">😐</button>
+            <button data-mood="4" class="mood-btn flex-1 text-2xl py-2 rounded-xl hover:bg-appbg transition">🙂</button>
+            <button data-mood="5" class="mood-btn flex-1 text-2xl py-2 rounded-xl hover:bg-appbg transition">😄</button>
+          </div>
+          <input id="moodNote" type="text" maxlength="140" placeholder="Anything on your mind? (optional)" class="w-full rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+          <div class="rounded-xl bg-white border border-line p-2 mt-2" style="height:150px"><canvas id="moodChart"></canvas></div>
+        </div>
+
         <div id="habitGrid" class="grid grid-cols-2 gap-3 mb-5"></div>
         <div class="rounded-2xl bg-card border border-line card-shadow p-4">
           <div class="flex items-center justify-between mb-3">
             <h3 class="font-semibold text-[15px]">Today</h3>
             <span id="todayCount" class="text-xs text-sub">0 logged</span>
           </div>
-          <ul id="todayList" class="space-y-2 text-sm">
-            <li class="text-sub italic">Nothing logged yet — tap a habit above.</li>
-          </ul>
+          <ul id="todayList" class="space-y-2 text-sm"><li class="text-sub italic">Nothing logged yet — tap a habit above.</li></ul>
         </div>
       </section>
 
-      <!-- ---------- TAB: SHOPPING ---------- -->
+      <!-- SHOPPING -->
       <section id="tabShopping" class="tab-panel hidden">
         <div class="flex gap-2 mb-4">
-          <input id="shopInput" type="text" enterkeyhint="done" placeholder="Add an item…"
-            class="flex-1 rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+          <input id="shopInput" type="text" enterkeyhint="done" placeholder="Add an item…" class="flex-1 rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
           <button id="shopAdd" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-5 active:scale-95 transition">Add</button>
         </div>
         <ul id="shopList" class="space-y-2"></ul>
       </section>
 
-      <!-- ---------- TAB: TO-DO ---------- -->
+      <!-- TO-DO -->
       <section id="tabTodo" class="tab-panel hidden">
         <div class="flex gap-2 mb-4">
-          <input id="todoInput" type="text" enterkeyhint="done" placeholder="Add a task…"
-            class="flex-1 rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+          <input id="todoInput" type="text" enterkeyhint="done" placeholder="Add a task…" class="flex-1 rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
           <button id="todoAdd" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-5 active:scale-95 transition">Add</button>
         </div>
         <ul id="todoList2" class="space-y-2"></ul>
       </section>
 
-      <!-- ---------- TAB: PLANTS ---------- -->
+      <!-- PLANTS -->
       <section id="tabPlants" class="tab-panel hidden">
         <div class="rounded-2xl bg-card border border-line card-shadow p-4 mb-4 space-y-2">
-          <input id="pName" type="text" placeholder="Plant name (e.g. Monstera)"
-            class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
-          <input id="pNotes" type="text" placeholder="Notes — care tips, spot, type…"
-            class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+          <input id="pName" type="text" placeholder="Plant name (e.g. Monstera)" class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+          <input id="pNotes" type="text" placeholder="Notes — care tips, spot, type…" class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
           <div class="flex gap-2">
-            <input id="pCycle" type="number" min="1" inputmode="numeric" placeholder="Water every … days"
-              class="flex-1 rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+            <input id="pCycle" type="number" min="1" inputmode="numeric" placeholder="Water every … days" class="flex-1 rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
             <label class="shrink-0 grid place-items-center rounded-xl bg-white border border-line px-4 text-sm text-sub cursor-pointer">📷<input id="pPhoto" type="file" accept="image/*" class="hidden" /></label>
           </div>
           <p id="pPhotoName" class="text-[11px] text-sub"></p>
@@ -176,13 +171,12 @@
         <ul id="plantList" class="space-y-3"></ul>
       </section>
 
-      <!-- ---------- TAB: FRIDAY VAULT ---------- -->
+      <!-- VAULT -->
       <section id="tabVault" class="tab-panel hidden">
         <div id="vaultBanner" class="rounded-2xl border p-4 mb-4 text-center"></div>
         <div class="rounded-2xl bg-card border border-line card-shadow p-4 mb-4">
           <label class="block text-xs font-medium text-sub mb-2">Leave a sealed note for Friday 💌</label>
-          <textarea id="vaultInput" rows="3" maxlength="1000" placeholder="A thought, a thank-you, a secret… sealed until Friday 5pm."
-            class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none resize-none"></textarea>
+          <textarea id="vaultInput" rows="3" maxlength="1000" placeholder="A thought, a thank-you, a secret… sealed until Friday 5pm." class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none resize-none"></textarea>
           <div class="mt-3 flex items-center justify-between">
             <span id="sealedCount" class="text-[11px] text-sub"></span>
             <button id="vaultSeal" class="rounded-full bg-accent hover:bg-accentdark text-white font-semibold px-5 py-2.5 active:scale-95 transition">🔒 Seal it</button>
@@ -193,15 +187,13 @@
       </section>
     </main>
 
-    <footer class="mt-6 mb-2 text-center text-[11px] text-sub">
-      Private · End-to-end encrypted
-    </footer>
+    <footer class="mt-6 mb-2 text-center text-[11px] text-sub">Private · End-to-end encrypted</footer>
   </div>
 
-  <!-- ===================== BOTTOM TAB BAR ===================== -->
+  <!-- TAB BAR -->
   <nav id="tabBar" class="hidden fixed bottom-0 inset-x-0 z-30 border-t border-line bg-card/90 backdrop-blur">
     <div class="mx-auto max-w-md grid grid-cols-5">
-      <button data-tab="habits" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">✅</span><span class="text-[11px] font-medium">Habits</span></button>
+      <button data-tab="habits" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">🏠</span><span class="text-[11px] font-medium">Home</span></button>
       <button data-tab="shopping" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">🛒</span><span class="text-[11px] font-medium">Shopping</span></button>
       <button data-tab="todo" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">📝</span><span class="text-[11px] font-medium">To-Do</span></button>
       <button data-tab="plants" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">🪴</span><span class="text-[11px] font-medium">Plants</span></button>
@@ -209,15 +201,13 @@
     </div>
   </nav>
 
-  <!-- ===================== PROFILE / SETTINGS MODAL ===================== -->
+  <!-- PROFILE MODAL -->
   <div id="settingsModal" class="hidden fixed inset-0 z-40 bg-black/30 backdrop-blur-sm px-4 py-8 overflow-y-auto">
     <div class="mx-auto max-w-md w-full rounded-2xl bg-card border border-line card-shadow p-5 fade-in">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-bold">Profile</h2>
         <button id="settingsClose" class="h-9 w-9 grid place-items-center rounded-full hover:bg-appbg text-sub active:scale-95 transition">✕</button>
       </div>
-
-      <!-- Signed-in identity -->
       <div class="flex items-center gap-3 mb-5 rounded-xl bg-appbg border border-line px-3 py-3">
         <span id="meAvatar" class="h-10 w-10 rounded-full overflow-hidden shrink-0 bg-accent"></span>
         <div class="min-w-0 flex-1">
@@ -227,31 +217,24 @@
         <button id="signOutBtn" class="shrink-0 rounded-full bg-white hover:bg-appbg border border-line px-3 py-2 text-xs active:scale-95 transition">Sign out</button>
       </div>
 
-      <!-- Weight tracker -->
       <label class="block text-xs font-medium text-sub mb-1">Weight (kg)</label>
       <div class="flex gap-2 mb-3">
-        <input id="wKg" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 72.5"
-          class="flex-1 rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
-        <input id="wDate" type="date"
-          class="rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink focus:border-accent focus:outline-none" />
+        <input id="wKg" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 72.5" class="flex-1 rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+        <input id="wDate" type="date" class="rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink focus:border-accent focus:outline-none" />
         <button id="wSave" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-4 active:scale-95 transition">Save</button>
       </div>
       <div class="rounded-xl bg-white border border-line p-2 mb-5" style="height:190px"><canvas id="weightChart"></canvas></div>
 
-      <!-- Your space + members -->
       <label class="block text-xs font-medium text-sub mb-1">Your space</label>
       <ul id="membersList" class="mb-4 space-y-1.5 text-sm"></ul>
 
-      <!-- Invite partner -->
       <label class="block text-xs font-medium text-sub mb-1">Invite your partner (by Google email)</label>
       <div class="flex gap-2">
-        <input id="inInvite" type="email" inputmode="email" placeholder="partner@gmail.com"
-          class="flex-1 rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+        <input id="inInvite" type="email" inputmode="email" placeholder="partner@gmail.com" class="flex-1 rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
         <button id="inviteBtn" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-4 active:scale-95 transition">Invite</button>
       </div>
       <p class="mt-1.5 text-[11px] text-sub">They sign in with that Google account and join automatically — sharing this same space.</p>
 
-      <!-- Import old data -->
       <div class="mt-5 border-t border-line pt-4">
         <label class="block text-xs font-medium text-sub mb-2">Import old data (one-time)</label>
         <label class="block text-[11px] text-sub mb-1">Habits CSV (habits.csv)</label>
@@ -265,13 +248,9 @@
     </div>
   </div>
 
-  <!-- Toast -->
-  <div id="toast"
-    class="pointer-events-none fixed left-1/2 -translate-x-1/2 bottom-8 z-50 opacity-0 transition-opacity duration-300
-           bg-ink text-white text-sm font-medium px-4 py-2.5 rounded-full shadow-lg"></div>
+  <div id="toast" class="pointer-events-none fixed left-1/2 -translate-x-1/2 bottom-8 z-50 opacity-0 transition-opacity duration-300 bg-ink text-white text-sm font-medium px-4 py-2.5 rounded-full shadow-lg"></div>
 
   <script>
-  /* ============================================================ FIREBASE CONFIG */
   const FIREBASE_CONFIG = {
     apiKey: "AIzaSyCiAmHonwoJleeTXXIMFcJgIPRJD1ipcmM",
     authDomain: "coupled-7b948.firebaseapp.com",
@@ -284,72 +263,140 @@
   const firebaseConfigured = () => !String(FIREBASE_CONFIG.apiKey).startsWith("PASTE_");
 
   const HABITS = [
-    { key: "workout",  label: "Workout",  emoji: "🏋️" },
-    { key: "read",     label: "Read",     emoji: "📚" },
-    { key: "hydrate",  label: "Hydrate",  emoji: "💧" },
-    { key: "meditate", label: "Meditate", emoji: "🧘" },
-    { key: "sleep",    label: "Sleep",    emoji: "😴" },
-    { key: "eatwell",  label: "Eat Well", emoji: "🥗" },
+    { key:"workout", label:"Workout", emoji:"🏋️" }, { key:"read", label:"Read", emoji:"📚" },
+    { key:"hydrate", label:"Hydrate", emoji:"💧" }, { key:"meditate", label:"Meditate", emoji:"🧘" },
+    { key:"sleep", label:"Sleep", emoji:"😴" }, { key:"eatwell", label:"Eat Well", emoji:"🥗" },
   ];
   const VAULT_REVEAL_DOW = 5, VAULT_REVEAL_HOUR = 17, VAULT_OPEN_HOURS = 24;
+  const MOOD_EMOJI = ["", "😢", "🙁", "😐", "🙂", "😄"];
 
-  /* ---------- helpers ---------- */
+  const QUOTES = [
+    "Home isn't a place — it's the person who feels like one.",
+    "Today, choose each other on purpose.",
+    "Small kindnesses, repeated daily, become a life.",
+    "You are someone's favorite hello and hardest goodbye.",
+    "Love grows in the ordinary: shared coffee, quiet mornings, folded laundry.",
+    "Let the past be a teacher, not a jailer.",
+    "Gratitude turns what you have into enough.",
+    "The best gift you give each other is your full attention.",
+    "Be soft with each other; life is hard enough outside these walls.",
+    "A good relationship is two people choosing to stay, again and again.",
+    "Forgive quickly — you're on the same team.",
+    "The future is a house you build one honest conversation at a time.",
+    "Notice the small things; they were never small.",
+    "You don't have to be perfect to be worthy of love.",
+    "Say the kind thing out loud today.",
+    "Healing isn't forgetting; it's making peace and moving forward together.",
+    "Your calm can be someone else's safe place.",
+    "Love is a verb — do it today.",
+    "Celebrate each other on ordinary Tuesdays.",
+    "The person beside you is a whole universe. Stay curious.",
+    "Let go of being right; hold on to being close.",
+    "Tenderness is strength that chose to be gentle.",
+    "Every day is a fresh page you write together.",
+    "Thank them for the things they always do.",
+    "Grudges are heavy; set them down and hold hands instead.",
+    "Grow together by growing kind.",
+    "The little rituals are the love language of ordinary days.",
+    "You are allowed to begin again, as many times as you need.",
+    "Choose curiosity over criticism today.",
+    "Being truly seen is the rarest gift — give it freely.",
+    "A shared burden is half as heavy; a shared joy is twice as bright.",
+    "Water what you want to grow — attention is love.",
+    "Peace at home is worth more than being right.",
+    "The past made you; it doesn't have to run you.",
+    "Look for the good in each other and you'll keep finding it.",
+    "Slow mornings together are a quiet kind of wealth.",
+    "Speak to each other the way you'll wish you had.",
+    "Love is patient with the person still becoming.",
+    "You already have so much — pause and feel it.",
+    "Build a future big enough for both your dreams.",
+    "Apologize like you mean it; forgive like it's free.",
+    "The days are long, the years are short — savor them.",
+    "Hold space for each other's hard days.",
+    "Gratitude is love with its eyes open.",
+    "Let today be gentle, and let it be enough.",
+    "Two imperfect people can build something beautiful.",
+    "Reach for their hand before you reach for your point.",
+    "The story you tell about your love shapes it — tell a kind one.",
+    "Rest is also a way to care for each other.",
+    "Come home to each other, even in the same room.",
+    "What you appreciate, appreciates.",
+    "Choose the relationship over the argument.",
+    "You are learning to love better every day — that counts.",
+    "Make room for who they are becoming.",
+    "A grateful heart rarely feels poor.",
+    "Plant patience today; harvest peace tomorrow.",
+    "The wound is where the light gets in — heal gently.",
+    "Be the reason they feel safe being themselves.",
+    "Little 'I love yous' keep the big love alive.",
+    "Tomorrow is unwritten; write it warm.",
+    "Notice one thing you love about them today, and say it.",
+    "Softness is not weakness; it's courage in comfortable clothes.",
+    "The best view is the ordinary life you built together.",
+    "Let kindness have the last word.",
+    "You can disagree and still be tender.",
+    "Give thanks for the ordinary miracle of another shared day.",
+    "Meet each other where you are, not where you wish you were.",
+    "The heart heals in the presence of patience.",
+    "Love is choosing them on the hard days too.",
+    "Fill your home with more 'thank you' than 'if only'.",
+    "Every sunrise is a chance to begin more gently.",
+    "Carry each other's hopes as your own.",
+    "Presence is the most romantic thing you can offer.",
+    "Let go of the scorecard; love isn't a competition.",
+    "Your kindness today is a gift to your future selves.",
+    "Cherish the person, not just the plans.",
+    "Be quick to comfort, slow to criticize.",
+    "Gratitude is the shortest path back to joy.",
+    "Keep choosing us.",
+    "Whatever today holds, you don't face it alone.",
+  ];
+
   const el = (id) => document.getElementById(id);
   const uid = () => (crypto?.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
   const todayStr = (d = new Date()) => d.toISOString().slice(0, 10);
-  const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  const dayOfYear = (d = new Date()) => Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000);
 
-  /* ---------- end-to-end encryption ---------- */
   const VERIFIER_TEXT = "sync-habits-verify-v1";
   let KEY = null;
   const passCacheKey = () => "sh_pass_" + SPACE_ID;
-  const toB64 = (bytes) => btoa(String.fromCharCode.apply(null, new Uint8Array(bytes)));
+  const toB64 = (b) => btoa(String.fromCharCode.apply(null, new Uint8Array(b)));
   const fromB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
-  async function deriveKey(passphrase, saltBytes) {
+  async function deriveKey(passphrase, salt) {
     const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(passphrase), "PBKDF2", false, ["deriveKey"]);
-    return crypto.subtle.deriveKey({ name: "PBKDF2", salt: saltBytes, iterations: 150000, hash: "SHA-256" },
-      base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+    return crypto.subtle.deriveKey({ name:"PBKDF2", salt, iterations:150000, hash:"SHA-256" }, base, { name:"AES-GCM", length:256 }, false, ["encrypt","decrypt"]);
   }
   async function encStr(text) {
     const iv = crypto.getRandomValues(new Uint8Array(12));
-    const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, KEY, new TextEncoder().encode(text));
+    const ct = await crypto.subtle.encrypt({ name:"AES-GCM", iv }, KEY, new TextEncoder().encode(text));
     const out = new Uint8Array(iv.length + ct.byteLength); out.set(iv, 0); out.set(new Uint8Array(ct), iv.length);
     return toB64(out);
   }
   async function decStr(b64) {
     const raw = fromB64(b64), iv = raw.slice(0, 12), ct = raw.slice(12);
-    const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, KEY, ct);
-    return new TextDecoder().decode(pt);
+    return new TextDecoder().decode(await crypto.subtle.decrypt({ name:"AES-GCM", iv }, KEY, ct));
   }
   async function encPayload(obj) { return { uid: ME.uid, enc: await encStr(JSON.stringify(obj)) }; }
   async function decDoc(d) {
-    const data = d.data() || {};
-    let content = {};
+    const data = d.data() || {}; let content = {};
     try { content = JSON.parse(await decStr(data.enc)); } catch (e) { content = { _undecryptable: true }; }
     return { id: d.id, uid: data.uid, _pending: d.metadata.hasPendingWrites, ...content };
   }
 
-  /* ---------- state ---------- */
-  let auth = null, db = null;
-  let ME = null;
-  let SPACE_ID = null, SPACE_DOC = null;
-  const STATE = { logs: [], items: [], notes: [], weights: [], plants: [] };
+  let auth = null, db = null, ME = null, SPACE_ID = null, SPACE_DOC = null;
+  const STATE = { logs: [], items: [], notes: [], weights: [], plants: [], moods: [] };
   const PENDING = { logs: false, items: false, notes: false };
-  let unsub = [];
-  let ACTIVE_TAB = "habits";
-  let booting = false;
-  let weightChart = null;
+  let unsub = [], ACTIVE_TAB = "habits", booting = false, weightChart = null, moodChart = null;
 
-  /* ============================================================ Boot */
   function init() {
-    buildHabitGrid();
-    wireUi();
+    buildHabitGrid(); wireUi();
     window.addEventListener("online", refreshStatus);
     window.addEventListener("offline", refreshStatus);
     if (!firebaseConfigured()) { showAuth("Firebase isn't set up yet — add your config in the code."); return; }
     firebase.initializeApp(FIREBASE_CONFIG);
-    auth = firebase.auth();
-    db = firebase.firestore();
+    auth = firebase.auth(); db = firebase.firestore();
     db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
     auth.getRedirectResult().catch(() => {});
     auth.onAuthStateChanged(handleAuth);
@@ -371,28 +418,26 @@
     el("wKg").addEventListener("keydown", (e) => { if (e.key === "Enter") addWeight(); });
     el("plantAdd").addEventListener("click", addPlant);
     el("pPhoto").addEventListener("change", () => { const f = el("pPhoto").files[0]; el("pPhotoName").textContent = f ? ("📷 " + f.name) : ""; });
+    el("vaultSeal").addEventListener("click", sealNote);
+    el("moodPicker").addEventListener("click", (e) => { const b = e.target.closest("[data-mood]"); if (b) logMood(parseInt(b.dataset.mood, 10)); });
     document.querySelectorAll(".tab-btn").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
     el("shopAdd").addEventListener("click", () => addFromInput("shopping", "shopInput"));
     el("shopInput").addEventListener("keydown", (e) => { if (e.key === "Enter") addFromInput("shopping", "shopInput"); });
     el("todoAdd").addEventListener("click", () => addFromInput("todo", "todoInput"));
     el("todoInput").addEventListener("keydown", (e) => { if (e.key === "Enter") addFromInput("todo", "todoInput"); });
-    el("vaultSeal").addEventListener("click", sealNote);
     setInterval(() => { if (ACTIVE_TAB === "vault") renderVault(); if (ACTIVE_TAB === "plants") renderPlants(); }, 60000);
   }
 
-  /* ============================================================ Auth */
   function doSignIn() {
     const provider = new firebase.auth.GoogleAuthProvider();
     el("authMsg").textContent = "Opening Google…";
     auth.signInWithPopup(provider).catch((err) => {
-      if (err && (err.code === "auth/popup-blocked" || err.code === "auth/cancelled-popup-request" || err.code === "auth/operation-not-supported-in-this-environment")) {
-        auth.signInWithRedirect(provider);
-      } else { el("authMsg").textContent = "Sign-in failed: " + (err && err.message ? err.message : err); }
+      if (err && (err.code === "auth/popup-blocked" || err.code === "auth/cancelled-popup-request" || err.code === "auth/operation-not-supported-in-this-environment")) auth.signInWithRedirect(provider);
+      else el("authMsg").textContent = "Sign-in failed: " + (err && err.message ? err.message : err);
     });
   }
   async function handleAuth(user) {
-    teardownListeners();
-    KEY = null;
+    teardownListeners(); KEY = null;
     if (!user) { ME = null; SPACE_ID = null; SPACE_DOC = null; showAuth(""); return; }
     ME = { uid: user.uid, email: (user.email || "").toLowerCase(), name: user.displayName || (user.email || "").split("@")[0], photo: user.photoURL || "" };
     showAuth("Setting up your space…");
@@ -411,15 +456,12 @@
     try {
       const key = await deriveKey(passphrase, fromB64(SPACE_DOC.encSalt));
       const prev = KEY; KEY = key;
-      const ok = (await decStr(SPACE_DOC.verifier)) === VERIFIER_TEXT;
-      if (!ok) { KEY = prev; return false; }
-      localStorage.setItem(passCacheKey(), passphrase);
-      return true;
+      if ((await decStr(SPACE_DOC.verifier)) !== VERIFIER_TEXT) { KEY = prev; return false; }
+      localStorage.setItem(passCacheKey(), passphrase); return true;
     } catch (e) { return false; }
   }
   async function onKeySubmit() {
-    const phrase = el("keyInput").value.trim();
-    const msg = el("keyMsg");
+    const phrase = el("keyInput").value.trim(); const msg = el("keyMsg");
     if (phrase.length < 4) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Use at least 4 characters."; return; }
     msg.className = "mt-3 text-center text-xs text-accent"; msg.textContent = "Working…";
     try {
@@ -429,8 +471,7 @@
         const verifier = await encStr(VERIFIER_TEXT);
         await spaceRef().update({ encSalt: toB64(salt), verifier });
         SPACE_DOC.encSalt = toB64(salt); SPACE_DOC.verifier = verifier;
-        localStorage.setItem(passCacheKey(), phrase);
-        el("keyInput").value = ""; afterKeyReady();
+        localStorage.setItem(passCacheKey(), phrase); el("keyInput").value = ""; afterKeyReady();
       } else {
         if (await tryUnlock(phrase)) { el("keyInput").value = ""; afterKeyReady(); }
         else { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "That phrase doesn't match. Ask your partner for the exact phrase."; }
@@ -446,24 +487,16 @@
       if (!mine.empty) { SPACE_ID = mine.docs[0].id; SPACE_DOC = mine.docs[0].data(); return; }
       const inv = await db.collection("invites").doc(ME.email).get();
       if (inv.exists) {
-        const spaceId = inv.data().spaceId;
-        const upd = {};
+        const spaceId = inv.data().spaceId; const upd = {};
         upd["members"] = firebase.firestore.FieldValue.arrayUnion(ME.uid);
         upd["memberEmails"] = firebase.firestore.FieldValue.arrayUnion(ME.email);
         upd["memberProfiles." + ME.uid] = { name: ME.name, email: ME.email };
         await db.collection("spaces").doc(spaceId).update(upd);
         await db.collection("invites").doc(ME.email).delete().catch(() => {});
-        SPACE_ID = spaceId;
-        SPACE_DOC = (await db.collection("spaces").doc(spaceId).get()).data();
-        return;
+        SPACE_ID = spaceId; SPACE_DOC = (await db.collection("spaces").doc(spaceId).get()).data(); return;
       }
-      const doc = {
-        ownerUid: ME.uid, ownerEmail: ME.email, members: [ME.uid], memberEmails: [ME.email],
-        memberProfiles: { [ME.uid]: { name: ME.name, email: ME.email } }, invitedEmails: [],
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      };
-      const ref = await db.collection("spaces").add(doc);
-      SPACE_ID = ref.id; SPACE_DOC = doc;
+      const doc = { ownerUid: ME.uid, ownerEmail: ME.email, members: [ME.uid], memberEmails: [ME.email], memberProfiles: { [ME.uid]: { name: ME.name, email: ME.email } }, invitedEmails: [], createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+      const ref = await db.collection("spaces").add(doc); SPACE_ID = ref.id; SPACE_DOC = doc;
     } finally { booting = false; }
   }
   function spaceRef() { return db.collection("spaces").doc(SPACE_ID); }
@@ -471,34 +504,18 @@
   function startListeners() {
     teardownListeners();
     unsub.push(spaceRef().onSnapshot((snap) => { SPACE_DOC = snap.data() || SPACE_DOC; renderMembers(); renderInsights(); refreshStatus(); }));
-    unsub.push(spaceRef().collection("logs").onSnapshot({ includeMetadataChanges: true }, async (snap) => {
-      STATE.logs = await Promise.all(snap.docs.map(decDoc)); PENDING.logs = snap.metadata.hasPendingWrites;
-      renderToday(); renderInsights(); refreshStatus();
-    }));
-    unsub.push(spaceRef().collection("items").onSnapshot({ includeMetadataChanges: true }, async (snap) => {
-      STATE.items = await Promise.all(snap.docs.map(decDoc)); PENDING.items = snap.metadata.hasPendingWrites;
-      renderLists(); refreshStatus();
-    }));
-    unsub.push(spaceRef().collection("notes").onSnapshot({ includeMetadataChanges: true }, async (snap) => {
-      STATE.notes = await Promise.all(snap.docs.map(decDoc)); PENDING.notes = snap.metadata.hasPendingWrites;
-      renderVault(); renderInsights(); refreshStatus();
-    }));
-    unsub.push(spaceRef().collection("weights").onSnapshot({ includeMetadataChanges: true }, async (snap) => {
-      STATE.weights = await Promise.all(snap.docs.map(decDoc));
-      if (!el("settingsModal").classList.contains("hidden")) renderWeightChart();
-    }));
-    unsub.push(spaceRef().collection("plants").onSnapshot({ includeMetadataChanges: true }, async (snap) => {
-      STATE.plants = await Promise.all(snap.docs.map(decDoc));
-      renderPlants();
-    }));
+    unsub.push(spaceRef().collection("logs").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.logs = await Promise.all(s.docs.map(decDoc)); PENDING.logs = s.metadata.hasPendingWrites; renderToday(); renderInsights(); refreshStatus(); }));
+    unsub.push(spaceRef().collection("items").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.items = await Promise.all(s.docs.map(decDoc)); PENDING.items = s.metadata.hasPendingWrites; renderLists(); refreshStatus(); }));
+    unsub.push(spaceRef().collection("notes").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.notes = await Promise.all(s.docs.map(decDoc)); PENDING.notes = s.metadata.hasPendingWrites; renderVault(); renderInsights(); refreshStatus(); }));
+    unsub.push(spaceRef().collection("weights").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.weights = await Promise.all(s.docs.map(decDoc)); if (!el("settingsModal").classList.contains("hidden")) renderWeightChart(); }));
+    unsub.push(spaceRef().collection("plants").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.plants = await Promise.all(s.docs.map(decDoc)); renderPlants(); }));
+    unsub.push(spaceRef().collection("moods").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.moods = await Promise.all(s.docs.map(decDoc)); renderMood(); }));
   }
   function teardownListeners() { unsub.forEach((u) => { try { u(); } catch (e) {} }); unsub = []; }
 
-  /* ============================================================ Views */
   function avatarHtml(size) {
     if (ME && ME.photo) return `<img src="${ME.photo}" referrerpolicy="no-referrer" class="h-full w-full object-cover" />`;
-    const initial = ((ME && ME.name) || "?").trim()[0].toUpperCase();
-    return `<span class="h-full w-full grid place-items-center bg-accent text-white font-semibold ${size}">${escapeHtml(initial)}</span>`;
+    return `<span class="h-full w-full grid place-items-center bg-accent text-white font-semibold ${size}">${escapeHtml(((ME && ME.name) || "?").trim()[0].toUpperCase())}</span>`;
   }
   function showAuth(msg) {
     el("authView").classList.remove("hidden"); el("authView").classList.add("flex");
@@ -509,9 +526,7 @@
   function showKey(mode) {
     el("keyBtn").dataset.mode = mode;
     el("keyTitle").textContent = mode === "create" ? "Create a secret phrase" : "Enter your secret phrase";
-    el("keyHint").textContent = mode === "create"
-      ? "This encrypts everything end-to-end. Share it with your partner. If you both lose it, the data can't be recovered."
-      : "Enter the phrase you set up together to unlock this space on this device.";
+    el("keyHint").textContent = mode === "create" ? "This encrypts everything end-to-end. Share it with your partner. If you both lose it, the data can't be recovered." : "Enter the phrase you set up together to unlock this space on this device.";
     el("keyBtn").textContent = mode === "create" ? "Encrypt & continue" : "Unlock";
     el("keyMsg").textContent = "";
     el("authView").classList.add("hidden"); el("authView").classList.remove("flex");
@@ -525,141 +540,99 @@
     el("keyView").classList.add("hidden"); el("keyView").classList.remove("flex");
     el("appView").classList.remove("hidden"); el("profileBtn").classList.remove("hidden"); el("tabBar").classList.remove("hidden");
     switchTab(ACTIVE_TAB);
-    renderToday(); renderLists(); renderVault(); renderPlants(); renderInsights(); refreshStatus();
+    renderQuote(); renderToday(); renderLists(); renderVault(); renderPlants(); renderMood(); renderInsights(); refreshStatus();
   }
   function switchTab(tab) {
     ACTIVE_TAB = tab;
-    const map = { habits: "tabHabits", shopping: "tabShopping", todo: "tabTodo", plants: "tabPlants", vault: "tabVault" };
+    const map = { habits:"tabHabits", shopping:"tabShopping", todo:"tabTodo", plants:"tabPlants", vault:"tabVault" };
     Object.entries(map).forEach(([k, id]) => el(id).classList.toggle("hidden", k !== tab));
-    document.querySelectorAll(".tab-btn").forEach((b) => {
-      const on = b.dataset.tab === tab;
-      b.classList.toggle("text-accent", on);
-      b.classList.toggle("text-sub", !on);
-    });
+    document.querySelectorAll(".tab-btn").forEach((b) => { const on = b.dataset.tab === tab; b.classList.toggle("text-accent", on); b.classList.toggle("text-sub", !on); });
     if (tab === "vault") renderVault();
     if (tab === "plants") renderPlants();
+    if (tab === "habits") renderMood();
   }
+  function renderQuote() { const box = el("dailyQuote"); if (box) box.textContent = QUOTES[dayOfYear() % QUOTES.length]; }
 
-  /* ============================================================ Profile / invite / members */
   function openSettings() {
     el("meName").textContent = ME ? ME.name : "—";
     el("meEmail").textContent = ME ? ME.email : "—";
     el("meAvatar").innerHTML = avatarHtml("text-base");
     if (!el("wDate").value) el("wDate").value = todayStr();
     el("settingsMsg").textContent = "";
-    renderMembers();
-    el("settingsModal").classList.remove("hidden");
-    renderWeightChart();
+    renderMembers(); el("settingsModal").classList.remove("hidden"); renderWeightChart();
   }
   function closeSettings() { el("settingsModal").classList.add("hidden"); }
   function members() {
-    const mp = (SPACE_DOC && SPACE_DOC.memberProfiles) || {};
-    const ids = (SPACE_DOC && SPACE_DOC.members) || [];
+    const mp = (SPACE_DOC && SPACE_DOC.memberProfiles) || {}, ids = (SPACE_DOC && SPACE_DOC.members) || [];
     return ids.map((id) => ({ uid: id, name: (mp[id] && mp[id].name) || (mp[id] && mp[id].email) || "Member", email: (mp[id] && mp[id].email) || "" }));
   }
   function renderMembers() {
-    const ul = el("membersList");
-    if (!ul || !SPACE_DOC) return;
-    const rows = members().map((m) =>
-      `<li class="flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-accent"></span>
-        <span class="text-ink">${escapeHtml(m.name)}</span>
-        ${m.uid === ME.uid ? '<span class="text-[10px] text-sub">(you)</span>' : ""}
-        ${m.uid === SPACE_DOC.ownerUid ? '<span class="text-[10px] text-accent">owner</span>' : ""}</li>`
-    );
-    const invited = (SPACE_DOC.invitedEmails || []).filter((e) => !(SPACE_DOC.memberEmails || []).includes(e));
-    invited.forEach((e) => rows.push(`<li class="flex items-center gap-2 text-sub"><span class="h-1.5 w-1.5 rounded-full bg-partnerB"></span>${escapeHtml(e)} <span class="text-[10px]">invited</span></li>`));
+    const ul = el("membersList"); if (!ul || !SPACE_DOC) return;
+    const rows = members().map((m) => `<li class="flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-accent"></span><span class="text-ink">${escapeHtml(m.name)}</span>${m.uid === ME.uid ? '<span class="text-[10px] text-sub">(you)</span>' : ""}${m.uid === SPACE_DOC.ownerUid ? '<span class="text-[10px] text-accent">owner</span>' : ""}</li>`);
+    (SPACE_DOC.invitedEmails || []).filter((e) => !(SPACE_DOC.memberEmails || []).includes(e)).forEach((e) => rows.push(`<li class="flex items-center gap-2 text-sub"><span class="h-1.5 w-1.5 rounded-full bg-partnerB"></span>${escapeHtml(e)} <span class="text-[10px]">invited</span></li>`));
     ul.innerHTML = rows.join("");
   }
   async function invitePartner() {
-    const email = el("inInvite").value.trim().toLowerCase();
-    const msg = el("settingsMsg");
+    const email = el("inInvite").value.trim().toLowerCase(); const msg = el("settingsMsg");
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Enter a valid email."; return; }
     if (email === ME.email) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "That's you 🙂"; return; }
     try {
       await db.collection("invites").doc(email).set({ spaceId: SPACE_ID, invitedByUid: ME.uid, invitedByEmail: ME.email, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
       await spaceRef().update({ invitedEmails: firebase.firestore.FieldValue.arrayUnion(email) });
-      el("inInvite").value = "";
-      msg.className = "mt-3 text-center text-xs text-[#0a7d2c]"; msg.textContent = `Invited ${email}. They'll join when they sign in.`;
+      el("inInvite").value = ""; msg.className = "mt-3 text-center text-xs text-[#0a7d2c]"; msg.textContent = `Invited ${email}. They'll join when they sign in.`;
     } catch (err) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Invite failed: " + (err && err.message ? err.message : err); }
   }
 
-  /* ============================================================ Weight tracker */
   async function addWeight() {
-    const msg = el("settingsMsg");
-    if (!SPACE_ID || !KEY) return;
-    const kg = parseFloat(el("wKg").value);
-    const date = el("wDate").value || todayStr();
+    const msg = el("settingsMsg"); if (!SPACE_ID || !KEY) return;
+    const kg = parseFloat(el("wKg").value); const date = el("wDate").value || todayStr();
     if (!kg || kg <= 0 || kg > 500) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Enter a valid weight in kg."; return; }
-    try {
-      await putEnc("weights", "w-" + ME.uid + "-" + date, { date, kg }, ME.uid);
-      el("wKg").value = "";
-      msg.className = "mt-3 text-center text-xs text-[#0a7d2c]"; msg.textContent = `Saved ${kg} kg for ${date} ✓`;
-    } catch (err) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Save failed: " + (err && err.message ? err.message : err); }
+    try { await putEnc("weights", "w-" + ME.uid + "-" + date, { date, kg }, ME.uid); el("wKg").value = ""; msg.className = "mt-3 text-center text-xs text-[#0a7d2c]"; msg.textContent = `Saved ${kg} kg for ${date} ✓`; }
+    catch (err) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Save failed: " + (err && err.message ? err.message : err); }
   }
-  function renderWeightChart() {
-    const canvas = el("weightChart");
-    if (!canvas || typeof Chart === "undefined") return;
-    const entries = STATE.weights.filter((w) => w.date && typeof w.kg === "number");
+  function lineChart(ref, canvasId, valueKey, yOpts) {
+    const canvas = el(canvasId); if (!canvas || typeof Chart === "undefined") return null;
+    const entries = STATE[ref].filter((w) => w.date && typeof w[valueKey] === "number");
     const dates = [...new Set(entries.map((w) => w.date))].sort();
-    const mem = members().slice(0, 2);
-    const colors = ["#00897b", "#ff7043"];
-    const datasets = mem.map((m, i) => ({
-      label: m.name,
-      data: dates.map((d) => { const e = entries.find((w) => w.uid === m.uid && w.date === d); return e ? e.kg : null; }),
-      borderColor: colors[i], backgroundColor: colors[i], tension: 0.3, spanGaps: true, pointRadius: 3, borderWidth: 2,
-    }));
-    if (weightChart) weightChart.destroy();
-    if (dates.length === 0) { return; }
-    weightChart = new Chart(canvas.getContext("2d"), {
-      type: "line",
-      data: { labels: dates.map((d) => d.slice(5)), datasets },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: mem.length > 1, labels: { boxWidth: 10, font: { family: "Quicksand" } } } },
-        scales: {
-          y: { ticks: { font: { family: "Quicksand" } }, grid: { color: "#eadfce" } },
-          x: { ticks: { font: { family: "Quicksand" }, maxTicksLimit: 6 }, grid: { display: false } },
-        },
-      },
-    });
+    const mem = members().slice(0, 2); const colors = ["#00897b", "#ff7043"];
+    const datasets = mem.map((m, i) => ({ label: m.name, data: dates.map((d) => { const e = entries.find((w) => w.uid === m.uid && w.date === d); return e ? e[valueKey] : null; }), borderColor: colors[i], backgroundColor: colors[i], tension: 0.3, spanGaps: true, pointRadius: 3, borderWidth: 2 }));
+    if (dates.length === 0) return { destroy(){}, _empty:true };
+    return new Chart(canvas.getContext("2d"), { type: "line", data: { labels: dates.map((d) => d.slice(5)), datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: mem.length > 1, labels: { boxWidth: 10, font: { family: "Quicksand" } } } }, scales: { y: Object.assign({ ticks: { font: { family: "Quicksand" } }, grid: { color: "#eadfce" } }, yOpts || {}), x: { ticks: { font: { family: "Quicksand" }, maxTicksLimit: 6 }, grid: { display: false } } } } });
+  }
+  function renderWeightChart() { if (weightChart) weightChart.destroy(); weightChart = lineChart("weights", "weightChart", "kg", {}); }
+
+  async function logMood(score) {
+    if (!SPACE_ID || !KEY || !score) return;
+    const date = todayStr(); const note = el("moodNote").value.trim();
+    try { await putEnc("moods", "m-" + ME.uid + "-" + date, { date, score, note }, ME.uid); el("moodNote").value = ""; showToast("Mood saved " + (MOOD_EMOJI[score] || "")); }
+    catch (e) { console.warn("mood failed", e); }
+  }
+  function renderMood() {
+    const picker = el("moodPicker"); if (!picker) return;
+    const t = todayStr(); const mine = STATE.moods.find((m) => m.uid === (ME && ME.uid) && m.date === t);
+    picker.querySelectorAll(".mood-btn").forEach((b) => { const on = mine && String(mine.score) === b.dataset.mood; b.classList.toggle("bg-appbg", on); b.classList.toggle("ring-2", on); b.classList.toggle("ring-accent", on); });
+    el("moodToday").textContent = members().map((mm) => { const md = STATE.moods.find((x) => x.uid === mm.uid && x.date === t); return md ? `${escapeHtml((mm.name || "").split(" ")[0])} ${MOOD_EMOJI[md.score] || ""}` : null; }).filter(Boolean).join("   ·   ");
+    if (moodChart) moodChart.destroy();
+    moodChart = lineChart("moods", "moodChart", "score", { min: 1, max: 5, ticks: { stepSize: 1, font: { size: 14 }, callback: (v) => MOOD_EMOJI[v] || v } });
   }
 
-  /* ============================================================ Plants */
   function compressImage(file, maxDim = 640, quality = 0.6) {
     return new Promise((resolve, reject) => {
       const img = new Image(); const url = URL.createObjectURL(file);
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-        const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
-        const c = document.createElement("canvas"); c.width = w; c.height = h;
-        c.getContext("2d").drawImage(img, 0, 0, w, h);
-        resolve(c.toDataURL("image/jpeg", quality));
-      };
+      img.onload = () => { URL.revokeObjectURL(url); const scale = Math.min(1, maxDim / Math.max(img.width, img.height)); const w = Math.round(img.width * scale), h = Math.round(img.height * scale); const c = document.createElement("canvas"); c.width = w; c.height = h; c.getContext("2d").drawImage(img, 0, 0, w, h); resolve(c.toDataURL("image/jpeg", quality)); };
       img.onerror = reject; img.src = url;
     });
   }
   async function addPlant() {
     if (!SPACE_ID || !KEY) return;
-    const name = el("pName").value.trim();
-    if (!name) { showToast("Give the plant a name"); return; }
-    const notes = el("pNotes").value.trim();
-    const cycle = Math.max(1, parseInt(el("pCycle").value, 10) || 7);
-    const file = el("pPhoto").files[0];
+    const name = el("pName").value.trim(); if (!name) { showToast("Give the plant a name"); return; }
+    const notes = el("pNotes").value.trim(); const cycle = Math.max(1, parseInt(el("pCycle").value, 10) || 7); const file = el("pPhoto").files[0];
     el("plantAdd").disabled = true; el("plantAdd").textContent = "Adding…";
-    try {
-      let photo = "";
-      if (file) { try { photo = await compressImage(file); } catch (e) { photo = ""; } }
-      await spaceRef().collection("plants").add(await encPayload({ name, notes, cycle, lastWatered: new Date().toISOString(), photo }));
-      el("pName").value = ""; el("pNotes").value = ""; el("pCycle").value = ""; el("pPhoto").value = ""; el("pPhotoName").textContent = "";
-      showToast("🪴 Plant added");
-    } catch (e) { showToast("Couldn't add plant"); console.warn(e); }
+    try { let photo = ""; if (file) { try { photo = await compressImage(file); } catch (e) { photo = ""; } } await spaceRef().collection("plants").add(await encPayload({ name, notes, cycle, lastWatered: new Date().toISOString(), photo })); el("pName").value = ""; el("pNotes").value = ""; el("pCycle").value = ""; el("pPhoto").value = ""; el("pPhotoName").textContent = ""; showToast("🪴 Plant added"); }
+    catch (e) { showToast("Couldn't add plant"); console.warn(e); }
     el("plantAdd").disabled = false; el("plantAdd").textContent = "Add plant";
   }
-  async function waterPlant(p) {
-    try { await putEnc("plants", p.id, { name: p.name, notes: p.notes || "", cycle: p.cycle || 7, lastWatered: new Date().toISOString(), photo: p.photo || "" }, p.uid || ME.uid); showToast("💧 Watered " + p.name); }
-    catch (e) { console.warn("water failed", e); }
-  }
+  async function waterPlant(p) { try { await putEnc("plants", p.id, { name: p.name, notes: p.notes || "", cycle: p.cycle || 7, lastWatered: new Date().toISOString(), photo: p.photo || "" }, p.uid || ME.uid); showToast("💧 Watered " + p.name); } catch (e) { console.warn("water failed", e); } }
   function deletePlant(id) { if (SPACE_ID) spaceRef().collection("plants").doc(id).delete().catch((e) => console.warn(e)); }
   function dueInfo(p) {
     const last = new Date(p.lastWatered || Date.now());
@@ -671,277 +644,126 @@
     return { text: `Due in ${days}d`, cls: "text-sub", dot: "bg-accent", days };
   }
   function renderPlants() {
-    const ul = el("plantList");
-    if (!ul) return;
+    const ul = el("plantList"); if (!ul) return;
     const plants = [...STATE.plants].sort((a, b) => dueInfo(a).days - dueInfo(b).days);
     if (plants.length === 0) { ul.innerHTML = `<li class="text-sub italic text-sm py-2">No plants yet — add one above 🌱</li>`; return; }
     ul.innerHTML = plants.map((p) => {
       const d = dueInfo(p);
       const img = p.photo ? `<img src="${p.photo}" class="h-16 w-16 rounded-xl object-cover shrink-0" />` : `<div class="h-16 w-16 rounded-xl bg-appbg grid place-items-center text-2xl shrink-0">🪴</div>`;
-      return `<li class="rounded-2xl bg-card border border-line card-shadow p-3 flex gap-3 items-center">
-        ${img}
-        <div class="min-w-0 flex-1">
-          <div class="font-semibold text-ink truncate">${escapeHtml(p.name || "Plant")}</div>
-          ${p.notes ? `<div class="text-[12px] text-sub truncate">${escapeHtml(p.notes)}</div>` : ""}
-          <div class="mt-1 flex items-center gap-1.5 text-[12px] ${d.cls}"><span class="h-1.5 w-1.5 rounded-full ${d.dot}"></span>${d.text} · every ${p.cycle || 7}d</div>
-        </div>
-        <div class="flex flex-col gap-1 shrink-0">
-          <button data-water="${p.id}" class="rounded-full bg-accent hover:bg-accentdark text-white text-xs font-semibold px-3 py-2 active:scale-95 transition">💧 Water</button>
-          <button data-delp="${p.id}" class="rounded-full border border-line text-sub text-[11px] px-3 py-1.5 active:scale-95 transition">Delete</button>
-        </div></li>`;
+      return `<li class="rounded-2xl bg-card border border-line card-shadow p-3 flex gap-3 items-center">${img}<div class="min-w-0 flex-1"><div class="font-semibold text-ink truncate">${escapeHtml(p.name || "Plant")}</div>${p.notes ? `<div class="text-[12px] text-sub truncate">${escapeHtml(p.notes)}</div>` : ""}<div class="mt-1 flex items-center gap-1.5 text-[12px] ${d.cls}"><span class="h-1.5 w-1.5 rounded-full ${d.dot}"></span>${d.text} · every ${p.cycle || 7}d</div></div><div class="flex flex-col gap-1 shrink-0"><button data-water="${p.id}" class="rounded-full bg-accent hover:bg-accentdark text-white text-xs font-semibold px-3 py-2 active:scale-95 transition">💧 Water</button><button data-delp="${p.id}" class="rounded-full border border-line text-sub text-[11px] px-3 py-1.5 active:scale-95 transition">Delete</button></div></li>`;
     }).join("");
-    ul.querySelectorAll("[data-water]").forEach((b) => b.addEventListener("click", () => {
-      const p = STATE.plants.find((x) => x.id === b.dataset.water); if (p) waterPlant(p);
-    }));
+    ul.querySelectorAll("[data-water]").forEach((b) => b.addEventListener("click", () => { const p = STATE.plants.find((x) => x.id === b.dataset.water); if (p) waterPlant(p); }));
     ul.querySelectorAll("[data-delp]").forEach((b) => b.addEventListener("click", () => deletePlant(b.dataset.delp)));
   }
 
-  /* ---- one-time migration ---- */
-  function tinyHash(s) { let h = 0; for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; } return (h >>> 0).toString(36); }
+  function tinyHash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
   function docId(raw) { return String(raw).replace(/[^\w-]/g, "_").slice(0, 120); }
   function parseCsv(text) {
     const rows = []; let row = [], cur = "", q = false;
-    for (let i = 0; i < text.length; i++) {
-      const c = text[i];
+    for (let i = 0; i < text.length; i++) { const c = text[i];
       if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
-      else if (c === '"') q = true;
-      else if (c === ",") { row.push(cur); cur = ""; }
-      else if (c === "\n") { row.push(cur); rows.push(row); row = []; cur = ""; }
-      else if (c !== "\r") cur += c;
+      else if (c === '"') q = true; else if (c === ",") { row.push(cur); cur = ""; } else if (c === "\n") { row.push(cur); rows.push(row); row = []; cur = ""; } else if (c !== "\r") cur += c;
     }
-    if (cur !== "" || row.length) { row.push(cur); rows.push(row); }
-    return rows;
+    if (cur !== "" || row.length) { row.push(cur); rows.push(row); } return rows;
   }
-  async function putEnc(coll, id, obj, uidVal) {
-    const enc = await encStr(JSON.stringify(obj));
-    return spaceRef().collection(coll).doc(docId(id)).set({ uid: uidVal, enc });
-  }
+  async function putEnc(coll, id, obj, uidVal) { return spaceRef().collection(coll).doc(docId(id)).set({ uid: uidVal, enc: await encStr(JSON.stringify(obj)) }); }
   async function importOldData() {
-    const msg = el("settingsMsg");
-    if (!SPACE_ID || !KEY) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Sign in and unlock first."; return; }
+    const msg = el("settingsMsg"); if (!SPACE_ID || !KEY) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Sign in and unlock first."; return; }
     const csvFile = el("impCsv").files[0], jsonFile = el("impJson").files[0];
     if (!csvFile && !jsonFile) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Choose at least one file."; return; }
     msg.className = "mt-3 text-center text-xs text-accent"; msg.textContent = "Importing…";
     try {
-      const nameToUid = {};
-      members().forEach((m) => { if (m.name) nameToUid[m.name.toLowerCase()] = m.uid; });
+      const nameToUid = {}; members().forEach((m) => { if (m.name) nameToUid[m.name.toLowerCase()] = m.uid; });
       const uidFor = (name) => (name && nameToUid[String(name).toLowerCase()]) || ME.uid;
       const writes = []; let count = 0;
-      if (csvFile) {
-        const rows = parseCsv(await csvFile.text());
-        for (let i = 1; i < rows.length; i++) {
-          const r = rows[i]; if (!r || r.length < 3) continue;
-          const date = r[0], user = r[1], habit = r[2];
-          if (!habit || !user) continue;
-          const ts = date ? new Date(date) : new Date();
-          const timestamp = isNaN(ts) ? new Date().toISOString() : ts.toISOString();
-          writes.push(putEnc("logs", "imp-" + tinyHash(user + "|" + habit + "|" + timestamp), { user, habit, timestamp }, uidFor(user)));
-          count++;
-        }
-      }
-      if (jsonFile) {
-        const data = JSON.parse(await jsonFile.text());
+      if (csvFile) { const rows = parseCsv(await csvFile.text());
+        for (let i = 1; i < rows.length; i++) { const r = rows[i]; if (!r || r.length < 3) continue; const date = r[0], user = r[1], habit = r[2]; if (!habit || !user) continue; const ts = date ? new Date(date) : new Date(); const timestamp = isNaN(ts) ? new Date().toISOString() : ts.toISOString(); writes.push(putEnc("logs", "imp-" + tinyHash(user + "|" + habit + "|" + timestamp), { user, habit, timestamp }, uidFor(user))); count++; } }
+      if (jsonFile) { const data = JSON.parse(await jsonFile.text());
         (data.shopping || []).forEach((it) => { writes.push(putEnc("items", it.id || ("imp-" + tinyHash("s" + it.text + it.ts)), { list: "shopping", text: it.text, user: it.user, ts: it.ts || new Date().toISOString() }, uidFor(it.user))); count++; });
         (data.todo || []).forEach((it) => { writes.push(putEnc("items", it.id || ("imp-" + tinyHash("t" + it.text + it.ts)), { list: "todo", text: it.text, user: it.user, ts: it.ts || new Date().toISOString() }, uidFor(it.user))); count++; });
-        (data.notes || []).forEach((n) => { const ts = n.ts || new Date().toISOString(); writes.push(putEnc("notes", n.id || ("imp-" + tinyHash("n" + n.text + ts)), { text: n.text, user: n.user, ts, revealAt: n.revealAt || nextReveal(new Date(ts)).toISOString() }, uidFor(n.user))); count++; });
-      }
+        (data.notes || []).forEach((n) => { const ts = n.ts || new Date().toISOString(); writes.push(putEnc("notes", n.id || ("imp-" + tinyHash("n" + n.text + ts)), { text: n.text, user: n.user, ts, revealAt: n.revealAt || nextReveal(new Date(ts)).toISOString() }, uidFor(n.user))); count++; }); }
       await Promise.all(writes);
       msg.className = "mt-3 text-center text-xs text-[#0a7d2c]"; msg.textContent = `Imported ${count} item${count === 1 ? "" : "s"} ✓`;
       renderToday(); renderLists(); renderVault(); renderInsights();
     } catch (err) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Import failed: " + (err && err.message ? err.message : err); }
   }
 
-  /* ============================================================ Habits */
   function buildHabitGrid() {
-    const grid = el("habitGrid");
-    grid.innerHTML = "";
-    HABITS.forEach((h) => {
-      const btn = document.createElement("button");
-      btn.className = "habit-btn rounded-2xl bg-card border border-line card-shadow py-6 flex flex-col items-center gap-2 focus:outline-none";
-      btn.innerHTML = `<span class="text-3xl">${h.emoji}</span><span class="text-sm font-medium text-ink">${h.label}</span>`;
-      btn.addEventListener("click", () => logHabit(h, btn));
-      grid.appendChild(btn);
-    });
+    const grid = el("habitGrid"); grid.innerHTML = "";
+    HABITS.forEach((h) => { const btn = document.createElement("button"); btn.className = "habit-btn rounded-2xl bg-card border border-line card-shadow py-6 flex flex-col items-center gap-2 focus:outline-none"; btn.innerHTML = `<span class="text-3xl">${h.emoji}</span><span class="text-sm font-medium text-ink">${h.label}</span>`; btn.addEventListener("click", () => logHabit(h, btn)); grid.appendChild(btn); });
   }
   async function logHabit(habit, btn) {
-    if (!SPACE_ID || !KEY) return;
-    flash(btn); showToast(`${habit.emoji} ${habit.label} logged`);
-    try { await spaceRef().collection("logs").add(await encPayload({ user: ME.name, habit: habit.label, timestamp: new Date().toISOString() })); }
-    catch (e) { console.warn("log failed", e); }
+    if (!SPACE_ID || !KEY) return; flash(btn); showToast(`${habit.emoji} ${habit.label} logged`);
+    try { await spaceRef().collection("logs").add(await encPayload({ user: ME.name, habit: habit.label, timestamp: new Date().toISOString() })); } catch (e) { console.warn("log failed", e); }
   }
-  function flash(btn) {
-    btn.classList.add("flash-success");
-    const span = btn.querySelector("span");
-    if (span) { span.classList.add("pop"); setTimeout(() => span.classList.remove("pop"), 400); }
-    setTimeout(() => btn.classList.remove("flash-success"), 650);
-  }
+  function flash(btn) { btn.classList.add("flash-success"); const s = btn.querySelector("span"); if (s) { s.classList.add("pop"); setTimeout(() => s.classList.remove("pop"), 400); } setTimeout(() => btn.classList.remove("flash-success"), 650); }
   function renderToday() {
-    const t = todayStr();
-    const mine = STATE.logs.filter((l) => l.uid === (ME && ME.uid) && (l.timestamp || "").slice(0, 10) === t);
+    const t = todayStr(); const mine = STATE.logs.filter((l) => l.uid === (ME && ME.uid) && (l.timestamp || "").slice(0, 10) === t);
     el("todayCount").textContent = `${mine.length} logged`;
     if (mine.length === 0) { el("todayList").innerHTML = `<li class="text-sub italic">Nothing logged yet — tap a habit above.</li>`; return; }
     mine.sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""));
-    el("todayList").innerHTML = mine.map((l) => {
-      const h = HABITS.find((x) => x.label === l.habit);
-      const emoji = h ? h.emoji : "•";
-      const time = new Date(l.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      const badge = l._pending ? `<span class="text-[#ff9f0a] text-[11px]">• saving</span>` : `<span class="text-accent text-[11px]">✓</span>`;
-      return `<li class="flex items-center justify-between"><span class="flex items-center gap-2"><span>${emoji}</span><span>${escapeHtml(l.habit)}</span></span><span class="flex items-center gap-3 text-sub text-xs">${time} ${badge}</span></li>`;
-    }).join("");
+    el("todayList").innerHTML = mine.map((l) => { const h = HABITS.find((x) => x.label === l.habit); const emoji = h ? h.emoji : "•"; const time = new Date(l.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); const badge = l._pending ? `<span class="text-[#ff9f0a] text-[11px]">• saving</span>` : `<span class="text-accent text-[11px]">✓</span>`; return `<li class="flex items-center justify-between"><span class="flex items-center gap-2"><span>${emoji}</span><span>${escapeHtml(l.habit)}</span></span><span class="flex items-center gap-3 text-sub text-xs">${time} ${badge}</span></li>`; }).join("");
   }
 
-  /* ============================================================ Shopping / To-Do */
   async function addFromInput(list, inputId) {
-    const input = el(inputId); const text = input.value.trim();
-    if (!text || !SPACE_ID || !KEY) return;
+    const input = el(inputId); const text = input.value.trim(); if (!text || !SPACE_ID || !KEY) return;
     input.value = ""; showToast(`Added to ${list === "shopping" ? "shopping" : "to-do"}`);
-    try { await spaceRef().collection("items").add(await encPayload({ list, text, user: ME.name, ts: new Date().toISOString() })); }
-    catch (e) { console.warn("add item failed", e); }
+    try { await spaceRef().collection("items").add(await encPayload({ list, text, user: ME.name, ts: new Date().toISOString() })); } catch (e) { console.warn("add item failed", e); }
   }
-  function removeItem(id, liEl) {
-    if (liEl) { liEl.style.opacity = "0.4"; liEl.style.transform = "translateX(8px)"; }
-    if (SPACE_ID) spaceRef().collection("items").doc(id).delete().catch((e) => console.warn("remove failed", e));
-  }
-  function renderLists() {
-    renderOneList("shopping", "shopList", "Nothing to buy — add an item above.");
-    renderOneList("todo", "todoList2", "No tasks — add one above.");
-  }
+  function removeItem(id, liEl) { if (liEl) { liEl.style.opacity = "0.4"; liEl.style.transform = "translateX(8px)"; } if (SPACE_ID) spaceRef().collection("items").doc(id).delete().catch((e) => console.warn("remove failed", e)); }
+  function renderLists() { renderOneList("shopping", "shopList", "Nothing to buy — add an item above."); renderOneList("todo", "todoList2", "No tasks — add one above."); }
   function renderOneList(list, ulId, emptyMsg) {
-    const ul = el(ulId);
-    const items = STATE.items.filter((x) => x.list === list).sort((a, b) => (a.ts || "").localeCompare(b.ts || ""));
+    const ul = el(ulId); const items = STATE.items.filter((x) => x.list === list).sort((a, b) => (a.ts || "").localeCompare(b.ts || ""));
     if (items.length === 0) { ul.innerHTML = `<li class="text-sub italic text-sm py-2">${emptyMsg}</li>`; return; }
-    ul.innerHTML = items.map((it) => {
-      const who = it.user ? `<span class="text-[11px] text-sub">${escapeHtml(it.user)}</span>` : "";
-      const pend = it._pending ? `<span class="text-[11px] text-[#ff9f0a]">• saving</span>` : "";
-      return `<li class="flex items-center gap-3 rounded-xl bg-card border border-line card-shadow px-3 py-3">
-                <button data-done="${it.id}" title="Mark done" class="done-btn h-6 w-6 shrink-0 rounded-full border-2 border-line hover:border-accent active:scale-90 transition grid place-items-center text-transparent hover:text-accent">✓</button>
-                <span class="flex-1 text-sm text-ink">${escapeHtml(it.text)}</span>
-                <span class="flex items-center gap-2">${who} ${pend}</span></li>`;
-    }).join("");
+    ul.innerHTML = items.map((it) => { const who = it.user ? `<span class="text-[11px] text-sub">${escapeHtml(it.user)}</span>` : ""; const pend = it._pending ? `<span class="text-[11px] text-[#ff9f0a]">• saving</span>` : ""; return `<li class="flex items-center gap-3 rounded-xl bg-card border border-line card-shadow px-3 py-3"><button data-done="${it.id}" title="Mark done" class="done-btn h-6 w-6 shrink-0 rounded-full border-2 border-line hover:border-accent active:scale-90 transition grid place-items-center text-transparent hover:text-accent">✓</button><span class="flex-1 text-sm text-ink">${escapeHtml(it.text)}</span><span class="flex items-center gap-2">${who} ${pend}</span></li>`; }).join("");
     ul.querySelectorAll(".done-btn").forEach((b) => b.addEventListener("click", () => removeItem(b.dataset.done, b.closest("li"))));
   }
 
-  /* ============================================================ Friday Vault */
-  function nextReveal(from = new Date()) {
-    const d = new Date(from);
-    let days = (VAULT_REVEAL_DOW - d.getDay() + 7) % 7;
-    let c = new Date(d.getFullYear(), d.getMonth(), d.getDate() + days, VAULT_REVEAL_HOUR, 0, 0, 0);
-    if (c <= d) c = new Date(c.getTime() + 7 * 86400000);
-    return c;
-  }
-  function isVaultOpen(now = new Date()) {
-    const d = new Date(now);
-    let back = (d.getDay() - VAULT_REVEAL_DOW + 7) % 7;
-    let openAt = new Date(d.getFullYear(), d.getMonth(), d.getDate() - back, VAULT_REVEAL_HOUR, 0, 0, 0);
-    if (openAt > d) openAt = new Date(openAt.getTime() - 7 * 86400000);
-    const closeAt = new Date(openAt.getTime() + VAULT_OPEN_HOURS * 3600000);
-    return now >= openAt && now < closeAt ? closeAt : null;
-  }
+  function nextReveal(from = new Date()) { const d = new Date(from); let days = (VAULT_REVEAL_DOW - d.getDay() + 7) % 7; let c = new Date(d.getFullYear(), d.getMonth(), d.getDate() + days, VAULT_REVEAL_HOUR, 0, 0, 0); if (c <= d) c = new Date(c.getTime() + 7 * 86400000); return c; }
+  function isVaultOpen(now = new Date()) { const d = new Date(now); let back = (d.getDay() - VAULT_REVEAL_DOW + 7) % 7; let openAt = new Date(d.getFullYear(), d.getMonth(), d.getDate() - back, VAULT_REVEAL_HOUR, 0, 0, 0); if (openAt > d) openAt = new Date(openAt.getTime() - 7 * 86400000); const closeAt = new Date(openAt.getTime() + VAULT_OPEN_HOURS * 3600000); return now >= openAt && now < closeAt ? closeAt : null; }
   const isRevealed = (n) => n.revealAt && new Date() >= new Date(n.revealAt);
-  function fmtCountdown(ms) {
-    if (ms < 0) ms = 0;
-    const m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
-    if (d > 0) return `${d}d ${h}h`;
-    if (h > 0) return `${h}h ${mm}m`;
-    return `${mm}m`;
-  }
+  function fmtCountdown(ms) { if (ms < 0) ms = 0; const m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60; if (d > 0) return `${d}d ${h}h`; if (h > 0) return `${h}h ${mm}m`; return `${mm}m`; }
   async function sealNote() {
-    if (!SPACE_ID || !KEY) return;
-    const input = el("vaultInput"); const text = input.value.trim();
-    if (!text) return;
-    const revealAt = nextReveal().toISOString();
-    input.value = "";
+    if (!SPACE_ID || !KEY) return; const input = el("vaultInput"); const text = input.value.trim(); if (!text) return;
+    const revealAt = nextReveal().toISOString(); input.value = "";
     showToast(`🔒 Sealed — opens ${new Date(revealAt).toLocaleDateString([], { weekday: "long" })} 5pm`);
-    try { await spaceRef().collection("notes").add(await encPayload({ text, user: ME.name, ts: new Date().toISOString(), revealAt })); }
-    catch (e) { console.warn("seal failed", e); }
+    try { await spaceRef().collection("notes").add(await encPayload({ text, user: ME.name, ts: new Date().toISOString(), revealAt })); } catch (e) { console.warn("seal failed", e); }
     renderVault();
   }
   function renderVault() {
-    const banner = el("vaultBanner"), listEl = el("vaultList"), countEl = el("sealedCount");
-    const notes = STATE.notes;
-    const sealed = notes.filter((n) => !isRevealed(n));
-    const revealed = notes.filter((n) => isRevealed(n));
-    const closeAt = isVaultOpen();
-    if (closeAt) {
-      banner.className = "rounded-2xl border border-accent/40 bg-accent/10 p-4 mb-4 text-center";
-      banner.innerHTML = `<div class="text-2xl mb-1">🔓</div><div class="font-semibold text-accent">The Vault is open!</div><div class="text-xs text-sub mt-1">Reseals in ${fmtCountdown(closeAt - new Date())}</div>`;
-    } else {
-      const next = nextReveal();
-      banner.className = "rounded-2xl border border-line bg-white p-4 mb-4 text-center";
-      banner.innerHTML = `<div class="text-2xl mb-1">🔒</div><div class="font-semibold text-ink">Sealed until Friday 5pm</div><div class="text-xs text-sub mt-1">Opens in ${fmtCountdown(next - new Date())}</div>`;
-    }
+    const banner = el("vaultBanner"), listEl = el("vaultList"), countEl = el("sealedCount"); const notes = STATE.notes;
+    const sealed = notes.filter((n) => !isRevealed(n)); const revealed = notes.filter((n) => isRevealed(n)); const closeAt = isVaultOpen();
+    if (closeAt) { banner.className = "rounded-2xl border border-accent/40 bg-accent/10 p-4 mb-4 text-center"; banner.innerHTML = `<div class="text-2xl mb-1">🔓</div><div class="font-semibold text-accent">The Vault is open!</div><div class="text-xs text-sub mt-1">Reseals in ${fmtCountdown(closeAt - new Date())}</div>`; }
+    else { const next = nextReveal(); banner.className = "rounded-2xl border border-line bg-white p-4 mb-4 text-center"; banner.innerHTML = `<div class="text-2xl mb-1">🔒</div><div class="font-semibold text-ink">Sealed until Friday 5pm</div><div class="text-xs text-sub mt-1">Opens in ${fmtCountdown(next - new Date())}</div>`; }
     countEl.textContent = sealed.length ? `${sealed.length} sealed note${sealed.length === 1 ? "" : "s"} waiting 🤫` : "";
     if (revealed.length === 0) { listEl.innerHTML = `<li class="text-sub italic text-sm py-2">No notes have opened yet. Seal one above 💌</li>`; return; }
     revealed.sort((a, b) => new Date(b.revealAt) - new Date(a.revealAt) || (b.ts || "").localeCompare(a.ts || ""));
-    listEl.innerHTML = revealed.map((n) => {
-      const opened = new Date(n.revealAt).toLocaleDateString([], { month: "short", day: "numeric" });
-      return `<li class="rounded-2xl bg-card border border-line card-shadow p-4"><p class="text-sm text-ink whitespace-pre-wrap">${escapeHtml(n.text)}</p><div class="mt-2 flex items-center justify-between text-[11px] text-sub"><span>— ${escapeHtml(n.user || "")}</span><span>opened ${opened}</span></div></li>`;
-    }).join("");
+    listEl.innerHTML = revealed.map((n) => { const opened = new Date(n.revealAt).toLocaleDateString([], { month: "short", day: "numeric" }); return `<li class="rounded-2xl bg-card border border-line card-shadow p-4"><p class="text-sm text-ink whitespace-pre-wrap">${escapeHtml(n.text)}</p><div class="mt-2 flex items-center justify-between text-[11px] text-sub"><span>— ${escapeHtml(n.user || "")}</span><span>opened ${opened}</span></div></li>`; }).join("");
   }
 
-  /* ============================================================ Insights */
-  function startOfWeek(d = new Date()) {
-    const x = new Date(d); const monIdx = (x.getDay() + 6) % 7;
-    x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - monIdx); return x;
-  }
-  function insightChip(emoji, a, b) {
-    return `<span class="shrink-0 flex items-center gap-1.5 rounded-full bg-card border border-line card-shadow px-3 py-1.5 text-xs"><span class="text-base">${emoji}</span><span class="text-partnerA font-semibold">${a}</span><span class="text-sub">·</span><span class="text-partnerB font-semibold">${b}</span></span>`;
-  }
+  function startOfWeek(d = new Date()) { const x = new Date(d); const monIdx = (x.getDay() + 6) % 7; x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - monIdx); return x; }
+  function insightChip(emoji, a, b) { return `<span class="shrink-0 flex items-center gap-1.5 rounded-full bg-card border border-line card-shadow px-3 py-1.5 text-xs"><span class="text-base">${emoji}</span><span class="text-partnerA font-semibold">${a}</span><span class="text-sub">·</span><span class="text-partnerB font-semibold">${b}</span></span>`; }
   function renderInsights() {
-    const box = el("insights"); if (!box) return;
-    const mem = members(); const A = mem[0] || null, B = mem[1] || null;
-    el("legendA").textContent = A ? A.name : "—";
-    el("legendB").textContent = B ? B.name : "—";
-    const ws = startOfWeek();
-    const logs = STATE.logs.filter((l) => new Date(l.timestamp) >= ws);
-    const notes = STATE.notes.filter((n) => n.ts && new Date(n.ts) >= ws);
-    const cnt = (arr, pred, u) => (u ? arr.filter((x) => pred(x) && x.uid === u.uid).length : 0);
-    const chips = [];
-    HABITS.forEach((h) => {
-      const a = cnt(logs, (l) => l.habit === h.label, A);
-      const b = cnt(logs, (l) => l.habit === h.label, B);
-      if (a + b > 0) chips.push(insightChip(h.emoji, a, b));
-    });
-    const na = cnt(notes, () => true, A), nb = cnt(notes, () => true, B);
-    if (na + nb > 0) chips.push(insightChip("🔒", na, nb));
+    const box = el("insights"); if (!box) return; const mem = members(); const A = mem[0] || null, B = mem[1] || null;
+    el("legendA").textContent = A ? A.name : "—"; el("legendB").textContent = B ? B.name : "—";
+    const ws = startOfWeek(); const logs = STATE.logs.filter((l) => new Date(l.timestamp) >= ws); const notes = STATE.notes.filter((n) => n.ts && new Date(n.ts) >= ws);
+    const cnt = (arr, pred, u) => (u ? arr.filter((x) => pred(x) && x.uid === u.uid).length : 0); const chips = [];
+    HABITS.forEach((h) => { const a = cnt(logs, (l) => l.habit === h.label, A); const b = cnt(logs, (l) => l.habit === h.label, B); if (a + b > 0) chips.push(insightChip(h.emoji, a, b)); });
+    const na = cnt(notes, () => true, A), nb = cnt(notes, () => true, B); if (na + nb > 0) chips.push(insightChip("🔒", na, nb));
     box.innerHTML = chips.length ? chips.join("") : `<span class="text-xs text-sub italic px-1">No activity yet this week — log something to see insights.</span>`;
   }
 
-  /* ============================================================ Status + toast */
   function anyPending() { return PENDING.logs || PENDING.items || PENDING.notes; }
-  function refreshStatus() {
-    const dot = el("statusDot"), txt = el("statusText");
-    let dotc, label;
-    if (!navigator.onLine) { dotc = "bg-[#ff9f0a]"; label = "Offline"; }
-    else if (anyPending()) { dotc = "bg-accent"; label = "Saving…"; }
-    else { dotc = "bg-accent"; label = "Synced"; }
-    dot.className = `h-2 w-2 rounded-full pulse-dot ${dotc}`;
-    txt.textContent = label;
-  }
+  function refreshStatus() { const dot = el("statusDot"), txt = el("statusText"); let dotc, label; if (!navigator.onLine) { dotc = "bg-[#ff9f0a]"; label = "Offline"; } else if (anyPending()) { dotc = "bg-accent"; label = "Saving…"; } else { dotc = "bg-accent"; label = "Synced"; } dot.className = `h-2 w-2 rounded-full pulse-dot ${dotc}`; txt.textContent = label; }
   let toastTimer;
-  function showToast(msg) {
-    const toast = el("toast");
-    toast.textContent = msg; toast.style.opacity = "1";
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => (toast.style.opacity = "0"), 1600);
-  }
+  function showToast(msg) { const toast = el("toast"); toast.textContent = msg; toast.style.opacity = "1"; clearTimeout(toastTimer); toastTimer = setTimeout(() => (toast.style.opacity = "0"), 1600); }
 
-  /* ============================================================ Service worker */
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     const swCode = `
-      const CACHE = 'coupled-v10';
+      const CACHE = 'coupled-v11';
       self.addEventListener('install', (e) => { self.skipWaiting(); });
-      self.addEventListener('activate', (e) => {
-        e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))));
-        self.clients.claim();
-      });
-      self.addEventListener('fetch', (e) => {
-        const req = e.request;
-        if (req.method !== 'GET') return;
-        const url = new URL(req.url);
-        if (url.origin !== location.origin) return;
-        e.respondWith(fetch(req).then((res) => { const c = res.clone(); caches.open(CACHE).then((x) => x.put(req, c)).catch(()=>{}); return res; }).catch(() => caches.match(req)));
-      });
+      self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))); self.clients.claim(); });
+      self.addEventListener('fetch', (e) => { const req = e.request; if (req.method !== 'GET') return; const url = new URL(req.url); if (url.origin !== location.origin) return; e.respondWith(fetch(req).then((res) => { const c = res.clone(); caches.open(CACHE).then((x) => x.put(req, c)).catch(()=>{}); return res; }).catch(() => caches.match(req))); });
     `;
     navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode], { type: "text/javascript" }))).catch(() => {});
   }
