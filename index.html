@@ -127,7 +127,8 @@
             <button data-mood="5" class="mood-btn flex-1 text-2xl py-2 rounded-xl hover:bg-appbg transition">😄</button>
           </div>
           <input id="moodNote" type="text" maxlength="140" placeholder="Anything on your mind? (optional)" class="w-full rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
-          <div class="rounded-xl bg-white border border-line p-2 mt-2" style="height:150px"><canvas id="moodChart"></canvas></div>
+          <div id="moodSync" class="text-center text-xs font-semibold mt-2"></div>
+          <div class="rounded-xl bg-white border border-line p-2 mt-1" style="height:150px"><canvas id="moodChart"></canvas></div>
         </div>
         <div class="rounded-2xl bg-card border border-line card-shadow p-4">
           <div class="flex items-center justify-between mb-3">
@@ -601,12 +602,13 @@
     try { await putEnc("weights", "w-" + ME.uid + "-" + date, { date, kg }, ME.uid); el("wKg").value = ""; msg.className = "mt-3 text-center text-xs text-[#0a7d2c]"; msg.textContent = `Saved ${kg} kg for ${date} ✓`; }
     catch (err) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Save failed: " + (err && err.message ? err.message : err); }
   }
-  function lineChart(ref, canvasId, valueKey, yOpts) {
+  function lineChart(ref, canvasId, valueKey, yOpts, fillBetween) {
     const canvas = el(canvasId); if (!canvas || typeof Chart === "undefined") return null;
     const entries = STATE[ref].filter((w) => w.date && typeof w[valueKey] === "number");
     const dates = [...new Set(entries.map((w) => w.date))].sort();
     const mem = members().slice(0, 2); const colors = ["#00897b", "#ff7043"];
-    const datasets = mem.map((m, i) => ({ label: m.name, data: dates.map((d) => { const e = entries.find((w) => w.uid === m.uid && w.date === d); return e ? e[valueKey] : null; }), borderColor: colors[i], backgroundColor: colors[i], tension: 0.3, spanGaps: true, pointRadius: 3, borderWidth: 2 }));
+    const datasets = mem.map((m, i) => ({ label: m.name, data: dates.map((d) => { const e = entries.find((w) => w.uid === m.uid && w.date === d); return e ? e[valueKey] : null; }), borderColor: colors[i], backgroundColor: colors[i], fill: false, tension: 0.3, spanGaps: true, pointRadius: 3, borderWidth: 2 }));
+    if (fillBetween && datasets.length >= 2) datasets[0].fill = { target: 1, above: "rgba(0,137,123,0.10)", below: "rgba(255,112,67,0.10)" };
     if (dates.length === 0) return { destroy(){}, _empty:true };
     return new Chart(canvas.getContext("2d"), { type: "line", data: { labels: dates.map((d) => d.slice(5)), datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: mem.length > 1, labels: { boxWidth: 10, font: { family: "Quicksand" } } } }, scales: { y: Object.assign({ ticks: { font: { family: "Quicksand" } }, grid: { color: "#eadfce" } }, yOpts || {}), x: { ticks: { font: { family: "Quicksand" }, maxTicksLimit: 6 }, grid: { display: false } } } } });
   }
@@ -623,8 +625,33 @@
     const t = todayStr(); const mine = STATE.moods.find((m) => m.uid === (ME && ME.uid) && m.date === t);
     picker.querySelectorAll(".mood-btn").forEach((b) => { const on = mine && String(mine.score) === b.dataset.mood; b.classList.toggle("bg-appbg", on); b.classList.toggle("ring-2", on); b.classList.toggle("ring-accent", on); });
     el("moodToday").textContent = members().map((mm) => { const md = STATE.moods.find((x) => x.uid === mm.uid && x.date === t); return md ? `${escapeHtml((mm.name || "").split(" ")[0])} ${MOOD_EMOJI[md.score] || ""}` : null; }).filter(Boolean).join("   ·   ");
+    renderMoodSync();
     if (moodChart) moodChart.destroy();
-    moodChart = lineChart("moods", "moodChart", "score", { min: 1, max: 5, ticks: { stepSize: 1, font: { size: 14 }, callback: (v) => MOOD_EMOJI[v] || v } });
+    moodChart = lineChart("moods", "moodChart", "score", { min: 1, max: 5, ticks: { stepSize: 1, font: { size: 14 }, callback: (v) => MOOD_EMOJI[v] || v } }, true);
+  }
+  function moodSyncInfo(days = 14) {
+    const mem = members(); if (mem.length < 2) return null;
+    const [A, B] = mem;
+    const cutoff = new Date(); cutoff.setHours(0, 0, 0, 0); cutoff.setDate(cutoff.getDate() - days + 1);
+    const byDate = {};
+    STATE.moods.forEach((m) => { if (m.date && typeof m.score === "number" && new Date(m.date) >= cutoff) { (byDate[m.date] = byDate[m.date] || {})[m.uid] = m.score; } });
+    const diffs = [];
+    Object.values(byDate).forEach((v) => { if (v[A.uid] != null && v[B.uid] != null) diffs.push(Math.abs(v[A.uid] - v[B.uid])); });
+    if (!diffs.length) return null;
+    const avg = diffs.reduce((a, b) => a + b, 0) / diffs.length;
+    return { pct: Math.round((1 - avg / 4) * 100), n: diffs.length };
+  }
+  function renderMoodSync() {
+    const box = el("moodSync"); if (!box) return;
+    const s = moodSyncInfo();
+    if (!s) { box.textContent = ""; return; }
+    let label, cls;
+    if (s.pct >= 85) { label = "In tune 💞"; cls = "text-accent"; }
+    else if (s.pct >= 65) { label = "Mostly in sync 💚"; cls = "text-accent"; }
+    else if (s.pct >= 45) { label = "Finding your rhythm"; cls = "text-sub"; }
+    else { label = "A bit out of step — maybe check in 🤍"; cls = "text-partnerB"; }
+    box.className = `text-center text-xs font-semibold mt-2 ${cls}`;
+    box.textContent = `${s.pct}% in sync · ${label} · ${s.n} shared day${s.n === 1 ? "" : "s"}`;
   }
 
   function compressImage(file, maxDim = 640, quality = 0.6) {
