@@ -81,6 +81,11 @@
         <h2 id="keyTitle" class="text-2xl font-bold">Set your secret phrase</h2>
         <p id="keyHint" class="text-sub mt-2 text-sm px-2">This encrypts everything end-to-end. Share it with your partner. If you both lose it, the data can't be recovered.</p>
       </div>
+      <div id="keyTips" class="hidden mb-4 text-left text-xs text-sub bg-card border border-line rounded-2xl p-4 space-y-2 card-shadow">
+        <p>🔒 <b class="text-ink">What this is:</b> everything you save gets scrambled on your device using this phrase. Only you and your partner can read it — not the app, not Google, not us.</p>
+        <p>💡 <b class="text-ink">What to pick:</b> something you'll <i>both</i> remember but others can't guess — a shared memory or a few unrelated words. e.g. <span class="text-accent font-medium">venice-gelato-2019</span></p>
+        <p>⚠️ <b class="text-ink">Please remember it:</b> there's no "forgot password." If you both forget it, the data can't be recovered — so save it somewhere safe.</p>
+      </div>
       <input id="keyInput" type="password" autocomplete="off" placeholder="Secret phrase" class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
       <button id="keyBtn" class="mt-3 rounded-full bg-accent hover:bg-accentdark text-white font-semibold py-3 active:scale-95 transition">Unlock</button>
       <button id="keySignOut" class="mt-3 text-xs text-sub underline">Sign out</button>
@@ -531,8 +536,9 @@
   function showKey(mode) {
     el("keyBtn").dataset.mode = mode;
     el("keyTitle").textContent = mode === "create" ? "Create a secret phrase" : "Enter your secret phrase";
-    el("keyHint").textContent = mode === "create" ? "This encrypts everything end-to-end. Share it with your partner. If you both lose it, the data can't be recovered." : "Enter the phrase you set up together to unlock this space on this device.";
+    el("keyHint").textContent = mode === "create" ? "Create one secret phrase together — it privately locks all your data. You'll both use the same phrase." : "Enter the phrase you set up together to unlock this space on this device.";
     el("keyBtn").textContent = mode === "create" ? "Encrypt & continue" : "Unlock";
+    el("keyTips").classList.toggle("hidden", mode !== "create");
     el("keyMsg").textContent = "";
     el("authView").classList.add("hidden"); el("authView").classList.remove("flex");
     el("keyView").classList.remove("hidden"); el("keyView").classList.add("flex");
