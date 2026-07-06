@@ -7,12 +7,17 @@
 
   <!-- ============ PWA / Add-to-Home-Screen ============ -->
   <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#ffffff" />
+  <meta name="theme-color" content="#f2ece0" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Coupled" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+
+  <!-- ============ Fonts ============ -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <!-- ============ Firebase (compat SDK — global `firebase`) ============ -->
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -26,19 +31,23 @@
       theme: {
         extend: {
           colors: {
-            appbg: '#f5f5f7', card: '#ffffff', ink: '#1d1d1f',
-            sub: '#6e6e73', accent: '#0071e3', accentdark: '#0060c0',
-            line: '#e5e5ea', partnerA: '#0071e3', partnerB: '#ff2d55',
+            appbg: '#f2ece0', card: '#fbf7ef', ink: '#2d3e46',
+            sub: '#7a8a90', accent: '#00897b', accentdark: '#00695c',
+            line: '#e4dccb', partnerA: '#00897b', partnerB: '#ff7043',
           },
-          fontFamily: { sans: ['-apple-system','BlinkMacSystemFont','SF Pro Text','Segoe UI','Roboto','Helvetica','Arial','sans-serif'] },
+          fontFamily: {
+            sans: ['Quicksand','ui-rounded','-apple-system','Segoe UI','Roboto','sans-serif'],
+            logo: ['Pacifico','cursive'],
+          },
         },
       },
     };
   </script>
 
   <style>
-    html, body { background: #f5f5f7; }
+    html, body { background: #f2ece0; }
     body { -webkit-tap-highlight-color: transparent; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+    .font-logo { font-family: 'Pacifico', cursive; }
     .habit-btn { transition: transform .1s ease, box-shadow .2s ease, border-color .2s ease; }
     .habit-btn:active { transform: scale(0.96); }
     .flash-success { background-color: #e7f8ec !important; border-color: #34c759 !important; box-shadow: 0 0 0 3px rgba(52,199,89,.18); }
@@ -48,7 +57,7 @@
     @keyframes fade { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
     @keyframes pulse2 { 0%,100%{opacity:1} 50%{opacity:.4} }
     .pulse-dot { animation: pulse2 1.6s ease-in-out infinite; }
-    .card-shadow { box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 1px 8px rgba(0,0,0,.04); }
+    .card-shadow { box-shadow: 0 1px 2px rgba(45,62,70,.05), 0 6px 20px rgba(45,62,70,.06); }
   </style>
 </head>
 
@@ -59,8 +68,8 @@
     <!-- ===================== HEADER ===================== -->
     <header class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-2">
-        <span class="text-2xl">💙</span>
-        <h1 class="text-2xl font-bold tracking-tight">Coupled</h1>
+        <span class="text-2xl">🏡</span>
+        <h1 class="text-3xl font-logo text-accent leading-none pt-1">Coupled</h1>
       </div>
       <button id="profileBtn" title="Settings" class="hidden h-9 w-9 rounded-full overflow-hidden border border-line active:scale-95 transition"></button>
     </header>
@@ -68,8 +77,8 @@
     <!-- ===================== VIEW 0: SIGN IN ===================== -->
     <section id="authView" class="hidden flex-1 flex flex-col justify-center fade-in">
       <div class="text-center mb-8">
-        <div class="text-6xl mb-4">💙</div>
-        <h2 class="text-3xl font-bold tracking-tight">Coupled</h2>
+        <div class="text-6xl mb-4">🏡</div>
+        <h2 class="text-5xl font-logo text-accent leading-tight pb-1">Coupled</h2>
         <p class="text-sub mt-2 text-[15px]">A private, shared space for two. Sign in to begin.</p>
       </div>
       <button id="signInBtn"
