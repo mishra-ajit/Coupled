@@ -527,9 +527,12 @@
   function doSignIn() {
     const provider = new firebase.auth.GoogleAuthProvider();
     el("authMsg").textContent = "Opening Google…";
-    auth.signInWithPopup(provider).catch((err) => {
-      if (err && (err.code === "auth/popup-blocked" || err.code === "auth/cancelled-popup-request" || err.code === "auth/operation-not-supported-in-this-environment")) auth.signInWithRedirect(provider);
-      else el("authMsg").textContent = "Sign-in failed: " + (err && err.message ? err.message : err);
+    // Use signInWithRedirect instead of signInWithPopup: Chrome's Cross-Origin-Opener-Policy
+    // handling can silently block the popup's window.closed/postMessage communication back to
+    // the opener on hosts you don't control response headers for (e.g. GitHub Pages), leaving
+    // sign-in stuck after picking an account with no error ever thrown. Redirect avoids this.
+    auth.signInWithRedirect(provider).catch((err) => {
+      el("authMsg").textContent = "Sign-in failed: " + (err && err.message ? err.message : err);
     });
   }
   async function handleAuth(user) {
