@@ -140,6 +140,11 @@
           <p id="dailyQuote" class="text-ink text-[15px] leading-relaxed italic"></p>
         </div>
 
+        <button id="docsOpen" class="w-full mb-5 rounded-2xl bg-card border border-line card-shadow px-4 py-3 flex items-center justify-between active:scale-[.99] transition">
+          <span class="flex items-center gap-2 font-medium text-ink">📎 Our documents <span id="docsCount" class="text-sub text-sm"></span></span>
+          <span class="text-accent text-sm font-semibold">Open →</span>
+        </button>
+
         <div id="habitGrid" class="grid grid-cols-2 gap-3 mb-5"></div>
 
         <div class="rounded-2xl bg-card border border-line card-shadow p-4 mb-5">
@@ -284,6 +289,13 @@
       <p class="mt-1.5 text-[11px] text-sub">They sign in with that Google account and join automatically — sharing this same space.</p>
 
       <div class="mt-5 border-t border-line pt-4">
+        <label class="block text-xs font-medium text-sub mb-1">Documents <span id="docCounter" class="text-sub">0/100</span></label>
+        <ul id="docCfgList" class="mb-2 space-y-1.5"></ul>
+        <label class="w-full mb-1 flex items-center justify-center gap-2 rounded-full bg-white hover:bg-appbg border border-line py-2.5 text-sm font-medium cursor-pointer active:scale-95 transition">＋ Upload documents<input id="docInput" type="file" multiple class="hidden" /></label>
+        <p id="docMsg" class="text-[11px] text-sub text-center">Images or files up to 5 MB each, 100 max. Encrypted.</p>
+      </div>
+
+      <div class="mt-5 border-t border-line pt-4">
         <label class="block text-xs font-medium text-sub mb-2">Import old data (one-time)</label>
         <label class="block text-[11px] text-sub mb-1">Habits CSV (habits.csv)</label>
         <input id="impCsv" type="file" accept=".csv,text/csv" class="w-full text-xs text-ink mb-3 file:mr-3 file:rounded-lg file:border file:border-line file:bg-appbg file:px-3 file:py-1.5 file:text-ink" />
@@ -297,6 +309,18 @@
         <p class="ios-hint hidden text-center text-[11px] text-sub">To install on iPhone: tap <b>Share ⬆️</b> → <b>Add to Home Screen</b>.</p>
       </div>
       <p id="settingsMsg" class="mt-3 text-center text-xs"></p>
+    </div>
+  </div>
+
+  <!-- DOCS MODAL -->
+  <div id="docsModal" class="hidden fixed inset-0 z-40 bg-black/30 backdrop-blur-sm px-4 py-8 overflow-y-auto">
+    <div class="mx-auto max-w-md w-full rounded-2xl bg-card border border-line card-shadow p-5 fade-in">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold">📎 Documents</h2>
+        <button id="docsClose" class="h-9 w-9 grid place-items-center rounded-full hover:bg-appbg text-sub active:scale-95 transition">✕</button>
+      </div>
+      <ul id="docList" class="space-y-2"></ul>
+      <p class="mt-3 text-[11px] text-sub text-center">Add or remove documents in Profile → Documents.</p>
     </div>
   </div>
 
@@ -438,7 +462,7 @@
   }
 
   let auth = null, db = null, ME = null, SPACE_ID = null, SPACE_DOC = null;
-  const STATE = { logs: [], items: [], notes: [], weights: [], plants: [], moods: [], ai: [], habits: [] };
+  const STATE = { logs: [], items: [], notes: [], weights: [], plants: [], moods: [], ai: [], habits: [], files: [] };
   const PENDING = { logs: false, items: false, notes: false };
   let unsub = [], ACTIVE_TAB = "habits", ACTIVE_SUB = "shopping", booting = false, weightChart = null, moodChart = null;
 
@@ -480,6 +504,10 @@
     el("habLabel").addEventListener("keydown", (e) => { if (e.key === "Enter") addHabit(); });
     document.querySelectorAll(".tab-btn").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
     document.querySelectorAll(".install-btn").forEach((b) => b.addEventListener("click", doInstall));
+    el("docsOpen").addEventListener("click", () => { renderDocs(); el("docsModal").classList.remove("hidden"); });
+    el("docsClose").addEventListener("click", () => el("docsModal").classList.add("hidden"));
+    el("docsModal").addEventListener("click", (ev) => { if (ev.target === el("docsModal")) el("docsModal").classList.add("hidden"); });
+    el("docInput").addEventListener("change", () => addFiles(el("docInput").files));
     document.querySelectorAll(".sub-btn").forEach((b) => b.addEventListener("click", () => switchSub(b.dataset.sub)));
     el("shopAdd").addEventListener("click", () => addFromInput("shopping", "shopInput"));
     el("shopInput").addEventListener("keydown", (e) => { if (e.key === "Enter") addFromInput("shopping", "shopInput"); });
@@ -572,6 +600,7 @@
     unsub.push(spaceRef().collection("moods").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.moods = await Promise.all(s.docs.map(decDoc)); renderMood(); }));
     unsub.push(spaceRef().collection("ai").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.ai = await Promise.all(s.docs.map(decDoc)); renderAI(); }));
     unsub.push(spaceRef().collection("habits").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.habits = await Promise.all(s.docs.map(decDoc)); if (STATE.habits.length === 0) seedDefaultHabits(); buildHabitGrid(); renderToday(); renderInsights(); renderHabitsSettings(); }));
+    unsub.push(spaceRef().collection("files").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.files = await Promise.all(s.docs.map(decDoc)); renderDocs(); }));
   }
   function teardownListeners() { unsub.forEach((u) => { try { u(); } catch (e) {} }); unsub = []; }
 
@@ -603,7 +632,7 @@
     el("keyView").classList.add("hidden"); el("keyView").classList.remove("flex");
     el("appView").classList.remove("hidden"); el("profileBtn").classList.remove("hidden"); el("tabBar").classList.remove("hidden");
     switchTab(ACTIVE_TAB);
-    renderQuote(); renderToday(); renderLists(); renderVault(); renderPlants(); renderMood(); renderAI(); renderInsights(); refreshStatus();
+    renderQuote(); renderToday(); renderLists(); renderVault(); renderPlants(); renderMood(); renderAI(); renderDocs(); renderInsights(); refreshStatus();
   }
   function switchTab(tab) {
     ACTIVE_TAB = tab;
@@ -629,7 +658,7 @@
     el("meAvatar").innerHTML = avatarHtml("text-base");
     if (!el("wDate").value) el("wDate").value = todayStr();
     el("settingsMsg").textContent = "";
-    renderMembers(); renderHabitsSettings(); el("settingsModal").classList.remove("hidden"); renderWeightChart();
+    renderMembers(); renderHabitsSettings(); renderDocs(); el("settingsModal").classList.remove("hidden"); renderWeightChart();
   }
   function closeSettings() { el("settingsModal").classList.add("hidden"); }
   function members() {
@@ -926,6 +955,67 @@ Plants overdue: ${overdue}`;
     habitList().forEach((h) => { const a = cnt(logs, (l) => l.habit === h.label, A); const b = cnt(logs, (l) => l.habit === h.label, B); if (a + b > 0) chips.push(insightChip(h.emoji, a, b)); });
     const na = cnt(notes, () => true, A), nb = cnt(notes, () => true, B); if (na + nb > 0) chips.push(insightChip("🔒", na, nb));
     box.innerHTML = chips.length ? chips.join("") : `<span class="text-xs text-sub italic px-1">No activity yet this week — log something to see insights.</span>`;
+  }
+
+  /* ---------- Documents (encrypted, chunked in Firestore) ---------- */
+  const DOC_CHUNK = 700000;
+  function abToB64(buf) { let bin = ""; const b = new Uint8Array(buf); const CH = 0x8000; for (let i = 0; i < b.length; i += CH) bin += String.fromCharCode.apply(null, b.subarray(i, i + CH)); return btoa(bin); }
+  function b64ToBytes(b64) { const bin = atob(b64); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return bytes; }
+  function fmtSize(b) { return b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB"; }
+  function fileIcon(t) { t = t || ""; if (t.startsWith("image/")) return "🖼️"; if (t.includes("pdf")) return "📄"; if (t.includes("word") || t.includes("document")) return "📝"; if (t.includes("sheet") || t.includes("excel") || t.includes("csv")) return "📊"; return "📎"; }
+  async function addFiles(list) {
+    if (!SPACE_ID || !KEY) return;
+    const files = [...list]; if (!files.length) return;
+    const msg = el("docMsg");
+    for (const f of files) {
+      if (STATE.files.length >= 100) { if (msg) msg.textContent = "You've reached 100 documents."; break; }
+      if (f.size > 5 * 1024 * 1024) { if (msg) msg.textContent = `${f.name} is over 5 MB — skipped.`; continue; }
+      if (msg) msg.textContent = `Uploading ${f.name}…`;
+      try {
+        const b64 = abToB64(await f.arrayBuffer());
+        const n = Math.ceil(b64.length / DOC_CHUNK) || 1;
+        const fileId = uid();
+        for (let i = 0; i < n; i++) { await spaceRef().collection("fileChunks").doc(fileId + "-" + i).set({ fileId, idx: i, uid: ME.uid, enc: await encStr(b64.slice(i * DOC_CHUNK, (i + 1) * DOC_CHUNK)) }); }
+        await putEnc("files", fileId, { name: f.name, type: f.type || "application/octet-stream", size: f.size, n, at: new Date().toISOString(), by: ME.name }, ME.uid);
+      } catch (e) { console.warn("upload failed", e); if (msg) msg.textContent = "Upload failed: " + (e && e.message ? e.message : e); }
+    }
+    el("docInput").value = "";
+    setTimeout(() => { if (el("docMsg")) el("docMsg").textContent = "Images or files up to 5 MB each, 100 max. Encrypted."; }, 2500);
+  }
+  async function openFile(meta) {
+    try {
+      showToast("Opening " + (meta.name || "file") + "…");
+      const snap = await spaceRef().collection("fileChunks").where("fileId", "==", meta.id).get();
+      const chunks = snap.docs.map((d) => d.data()).sort((a, b) => a.idx - b.idx);
+      let b64 = ""; for (const c of chunks) b64 += await decStr(c.enc);
+      const url = URL.createObjectURL(new Blob([b64ToBytes(b64)], { type: meta.type || "application/octet-stream" }));
+      window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (e) { showToast("Couldn't open file"); console.warn(e); }
+  }
+  async function deleteFile(meta) {
+    try {
+      const snap = await spaceRef().collection("fileChunks").where("fileId", "==", meta.id).get();
+      await Promise.all(snap.docs.map((d) => d.ref.delete()));
+      await spaceRef().collection("files").doc(meta.id).delete();
+    } catch (e) { console.warn("delete file failed", e); }
+  }
+  function renderDocs() {
+    const files = [...STATE.files].sort((a, b) => (b.at || "").localeCompare(a.at || ""));
+    const cnt = files.length;
+    if (el("docsCount")) el("docsCount").textContent = cnt ? `(${cnt})` : "";
+    if (el("docCounter")) el("docCounter").textContent = `${cnt}/100`;
+    const ml = el("docList");
+    if (ml) {
+      ml.innerHTML = cnt ? files.map((f) => `<li><button data-openf="${f.id}" class="w-full flex items-center gap-3 rounded-xl bg-card border border-line card-shadow px-3 py-3 text-left active:scale-[.99] transition"><span class="text-xl">${fileIcon(f.type)}</span><span class="min-w-0 flex-1"><span class="block text-sm text-ink truncate">${escapeHtml(f.name || "file")}</span><span class="block text-[11px] text-sub">${fmtSize(f.size || 0)}</span></span><span class="text-accent text-xs font-semibold">Open</span></button></li>`).join("") : `<li class="text-sub italic text-sm py-2">No documents yet — add some in Profile → Documents.</li>`;
+      ml.querySelectorAll("[data-openf]").forEach((b) => b.addEventListener("click", () => { const f = STATE.files.find((x) => x.id === b.dataset.openf); if (f) openFile(f); }));
+    }
+    const sl = el("docCfgList");
+    if (sl) {
+      sl.innerHTML = cnt ? files.map((f) => `<li class="flex items-center gap-2 rounded-xl bg-appbg border border-line px-3 py-2"><span class="text-lg">${fileIcon(f.type)}</span><span class="min-w-0 flex-1"><span class="block text-sm text-ink truncate">${escapeHtml(f.name || "file")}</span><span class="block text-[10px] text-sub">${fmtSize(f.size || 0)}</span></span><button data-openf2="${f.id}" class="text-accent text-xs px-2 py-1">Open</button><button data-delf="${f.id}" class="text-sub text-xs px-2 py-1">Remove</button></li>`).join("") : `<li class="text-sub italic text-xs py-1">No documents yet.</li>`;
+      sl.querySelectorAll("[data-openf2]").forEach((b) => b.addEventListener("click", () => { const f = STATE.files.find((x) => x.id === b.dataset.openf2); if (f) openFile(f); }));
+      sl.querySelectorAll("[data-delf]").forEach((b) => b.addEventListener("click", () => { const f = STATE.files.find((x) => x.id === b.dataset.delf); if (f) deleteFile(f); }));
+    }
   }
 
   /* ---------- Install (PWA) ---------- */
