@@ -564,7 +564,7 @@
   function startListeners() {
     teardownListeners();
     unsub.push(spaceRef().onSnapshot((snap) => { SPACE_DOC = snap.data() || SPACE_DOC; renderMembers(); renderInsights(); refreshStatus(); }));
-    unsub.push(spaceRef().collection("logs").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.logs = await Promise.all(s.docs.map(decDoc)); PENDING.logs = s.metadata.hasPendingWrites; renderToday(); renderInsights(); refreshStatus(); }));
+    unsub.push(spaceRef().collection("logs").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.logs = await Promise.all(s.docs.map(decDoc)); PENDING.logs = s.metadata.hasPendingWrites; renderToday(); renderHabitStates(); renderInsights(); refreshStatus(); }));
     unsub.push(spaceRef().collection("items").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.items = await Promise.all(s.docs.map(decDoc)); PENDING.items = s.metadata.hasPendingWrites; renderLists(); refreshStatus(); }));
     unsub.push(spaceRef().collection("notes").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.notes = await Promise.all(s.docs.map(decDoc)); PENDING.notes = s.metadata.hasPendingWrites; renderVault(); renderInsights(); refreshStatus(); }));
     unsub.push(spaceRef().collection("weights").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.weights = await Promise.all(s.docs.map(decDoc)); if (!el("settingsModal").classList.contains("hidden")) renderWeightChart(); }));
@@ -852,11 +852,24 @@ Plants overdue: ${overdue}`;
   }
   function buildHabitGrid() {
     const grid = el("habitGrid"); grid.innerHTML = "";
-    habitList().forEach((h) => { const btn = document.createElement("button"); btn.className = "habit-btn rounded-2xl bg-card border border-line card-shadow py-6 flex flex-col items-center gap-2 focus:outline-none"; btn.innerHTML = `<span class="text-3xl">${escapeHtml(h.emoji || "✅")}</span><span class="text-sm font-medium text-ink">${escapeHtml(h.label || "")}</span>`; btn.addEventListener("click", () => logHabit(h, btn)); grid.appendChild(btn); });
+    habitList().forEach((h) => { const btn = document.createElement("button"); btn.className = "habit-btn rounded-2xl bg-card border border-line card-shadow py-6 flex flex-col items-center gap-2 focus:outline-none"; btn.dataset.habit = h.label; btn.innerHTML = `<span class="text-3xl">${escapeHtml(h.emoji || "✅")}</span><span class="text-sm font-medium text-ink">${escapeHtml(h.label || "")}</span>`; btn.addEventListener("click", () => logHabit(h, btn)); grid.appendChild(btn); });
+    renderHabitStates();
+  }
+  function renderHabitStates() {
+    const t = todayStr();
+    const done = new Set(STATE.logs.filter((l) => l.uid === (ME && ME.uid) && (l.timestamp || "").slice(0, 10) === t).map((l) => l.habit));
+    document.querySelectorAll("#habitGrid .habit-btn").forEach((b) => { const on = done.has(b.dataset.habit); b.classList.toggle("ring-2", on); b.classList.toggle("ring-accent", on); b.classList.toggle("bg-accent/5", on); });
   }
   async function logHabit(habit, btn) {
-    if (!SPACE_ID || !KEY) return; flash(btn); showToast(`${habit.emoji} ${habit.label} logged`);
-    try { await spaceRef().collection("logs").add(await encPayload({ user: ME.name, habit: habit.label, timestamp: new Date().toISOString() })); } catch (e) { console.warn("log failed", e); }
+    if (!SPACE_ID || !KEY) return;
+    const date = todayStr();
+    const id = "h-" + ME.uid + "-" + date + "-" + docId(habit.label); // one per person per habit per day
+    if (STATE.logs.some((l) => l.id === id)) {
+      try { await spaceRef().collection("logs").doc(id).delete(); showToast(`Removed ${habit.emoji} ${habit.label}`); } catch (e) { console.warn(e); }
+      return;
+    }
+    flash(btn); showToast(`${habit.emoji} ${habit.label} logged`);
+    try { await putEnc("logs", id, { user: ME.name, habit: habit.label, timestamp: new Date().toISOString() }, ME.uid); } catch (e) { console.warn("log failed", e); }
   }
   function flash(btn) { btn.classList.add("flash-success"); const s = btn.querySelector("span"); if (s) { s.classList.add("pop"); setTimeout(() => s.classList.remove("pop"), 400); } setTimeout(() => btn.classList.remove("flash-success"), 650); }
   function renderToday() {
