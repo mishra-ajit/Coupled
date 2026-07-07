@@ -135,6 +135,7 @@
 
       <!-- HABITS (home) -->
       <section id="tabHabits" class="tab-panel">
+        <!-- Quote of the day -->
         <div class="rounded-2xl bg-accent/10 border border-accent/20 p-4 mb-5 text-center">
           <div class="text-[11px] uppercase tracking-wide text-accent font-semibold mb-1">Today, for us 💚</div>
           <p id="dailyQuote" class="text-ink text-[15px] leading-relaxed italic"></p>
@@ -296,15 +297,6 @@
       </div>
 
       <div class="mt-5 border-t border-line pt-4">
-        <label class="block text-xs font-medium text-sub mb-2">Import old data (one-time)</label>
-        <label class="block text-[11px] text-sub mb-1">Habits CSV (habits.csv)</label>
-        <input id="impCsv" type="file" accept=".csv,text/csv" class="w-full text-xs text-ink mb-3 file:mr-3 file:rounded-lg file:border file:border-line file:bg-appbg file:px-3 file:py-1.5 file:text-ink" />
-        <label class="block text-[11px] text-sub mb-1">Lists JSON (lists.json)</label>
-        <input id="impJson" type="file" accept=".json,application/json" class="w-full text-xs text-ink mb-3 file:mr-3 file:rounded-lg file:border file:border-line file:bg-appbg file:px-3 file:py-1.5 file:text-ink" />
-        <button id="importBtn" class="w-full rounded-full bg-white hover:bg-appbg border border-line py-2.5 text-sm font-medium active:scale-95 transition">Import into my space</button>
-        <p class="mt-1.5 text-[11px] text-sub">Download both files from Drive first (File → Download), then pick them here. Safe to run twice — duplicates are skipped.</p>
-      </div>
-      <div class="mt-5 border-t border-line pt-4">
         <button class="install-btn hidden w-full rounded-full bg-white hover:bg-appbg border border-line py-2.5 text-sm font-medium active:scale-95 transition">📲 Install Coupled as an app</button>
         <p class="ios-hint hidden text-center text-[11px] text-sub">To install on iPhone: tap <b>Share ⬆️</b> → <b>Add to Home Screen</b>.</p>
       </div>
@@ -319,8 +311,13 @@
         <h2 class="text-lg font-bold">📎 Documents</h2>
         <button id="docsClose" class="h-9 w-9 grid place-items-center rounded-full hover:bg-appbg text-sub active:scale-95 transition">✕</button>
       </div>
+      <div id="docPreviewWrap" class="hidden">
+        <button id="docBack" class="mb-3 text-sm text-accent font-semibold active:scale-95 transition">← All documents</button>
+        <div id="docPreview"></div>
+        <a id="docDownload" class="hidden mt-3 inline-block text-sm text-accent font-semibold" download>⬇ Download</a>
+      </div>
       <ul id="docList" class="space-y-2"></ul>
-      <p class="mt-3 text-[11px] text-sub text-center">Add or remove documents in Profile → Documents.</p>
+      <p id="docHint" class="mt-3 text-[11px] text-sub text-center">Tap a document to preview it. Rename or remove in Profile → Documents.</p>
     </div>
   </div>
 
@@ -346,6 +343,7 @@
   const VAULT_REVEAL_DOW = 5, VAULT_REVEAL_HOUR = 17, VAULT_OPEN_HOURS = 24;
   const MOOD_EMOJI = ["", "😢", "🙁", "😐", "🙂", "😄"];
 
+  // A year of gentle daily reminders — one reveals each morning.
   const QUOTES = [
     "Home isn't a place — it's the person who feels like one.",
     "Today, choose each other on purpose.",
@@ -435,6 +433,7 @@
   const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
   const dayOfYear = (d = new Date()) => Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000);
 
+  /* ---------- E2E encryption ---------- */
   const VERIFIER_TEXT = "sync-habits-verify-v1";
   let KEY = null;
   const passCacheKey = () => "sh_pass_" + SPACE_ID;
@@ -461,6 +460,7 @@
     return { id: d.id, uid: data.uid, _pending: d.metadata.hasPendingWrites, ...content };
   }
 
+  /* ---------- state ---------- */
   let auth = null, db = null, ME = null, SPACE_ID = null, SPACE_DOC = null;
   const STATE = { logs: [], items: [], notes: [], weights: [], plants: [], moods: [], ai: [], habits: [], files: [] };
   const PENDING = { logs: false, items: false, notes: false };
@@ -492,7 +492,6 @@
     el("keyInput").addEventListener("keydown", (e) => { if (e.key === "Enter") onKeySubmit(); });
     el("inviteBtn").addEventListener("click", invitePartner);
     el("inInvite").addEventListener("keydown", (e) => { if (e.key === "Enter") invitePartner(); });
-    el("importBtn").addEventListener("click", importOldData);
     el("wSave").addEventListener("click", addWeight);
     el("wKg").addEventListener("keydown", (e) => { if (e.key === "Enter") addWeight(); });
     el("plantAdd").addEventListener("click", addPlant);
@@ -504,9 +503,10 @@
     el("habLabel").addEventListener("keydown", (e) => { if (e.key === "Enter") addHabit(); });
     document.querySelectorAll(".tab-btn").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
     document.querySelectorAll(".install-btn").forEach((b) => b.addEventListener("click", doInstall));
-    el("docsOpen").addEventListener("click", () => { renderDocs(); el("docsModal").classList.remove("hidden"); });
-    el("docsClose").addEventListener("click", () => el("docsModal").classList.add("hidden"));
-    el("docsModal").addEventListener("click", (ev) => { if (ev.target === el("docsModal")) el("docsModal").classList.add("hidden"); });
+    el("docsOpen").addEventListener("click", () => { renderDocs(); backToDocList(); el("docsModal").classList.remove("hidden"); });
+    el("docsClose").addEventListener("click", () => { backToDocList(); el("docsModal").classList.add("hidden"); });
+    el("docsModal").addEventListener("click", (ev) => { if (ev.target === el("docsModal")) { backToDocList(); el("docsModal").classList.add("hidden"); } });
+    el("docBack").addEventListener("click", backToDocList);
     el("docInput").addEventListener("change", () => addFiles(el("docInput").files));
     document.querySelectorAll(".sub-btn").forEach((b) => b.addEventListener("click", () => switchSub(b.dataset.sub)));
     el("shopAdd").addEventListener("click", () => addFromInput("shopping", "shopInput"));
@@ -516,6 +516,7 @@
     setInterval(() => { if (ACTIVE_TAB === "vault") renderVault(); if (ACTIVE_TAB === "plants") renderPlants(); }, 60000);
   }
 
+  /* ---------- Auth ---------- */
   function doSignIn() {
     const provider = new firebase.auth.GoogleAuthProvider();
     el("authMsg").textContent = "Opening Google…";
@@ -604,6 +605,7 @@
   }
   function teardownListeners() { unsub.forEach((u) => { try { u(); } catch (e) {} }); unsub = []; }
 
+  /* ---------- Views ---------- */
   function avatarHtml(size) {
     if (ME && ME.photo) return `<img src="${ME.photo}" referrerpolicy="no-referrer" class="h-full w-full object-cover" />`;
     return `<span class="h-full w-full grid place-items-center bg-accent text-white font-semibold ${size}">${escapeHtml(((ME && ME.name) || "?").trim()[0].toUpperCase())}</span>`;
@@ -652,6 +654,7 @@
   }
   function renderQuote() { const box = el("dailyQuote"); if (box) box.textContent = QUOTES[dayOfYear() % QUOTES.length]; }
 
+  /* ---------- Profile / invite / members ---------- */
   function openSettings() {
     el("meName").textContent = ME ? ME.name : "—";
     el("meEmail").textContent = ME ? ME.email : "—";
@@ -682,6 +685,7 @@
     } catch (err) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Invite failed: " + (err && err.message ? err.message : err); }
   }
 
+  /* ---------- Weight ---------- */
   async function addWeight() {
     const msg = el("settingsMsg"); if (!SPACE_ID || !KEY) return;
     const kg = parseFloat(el("wKg").value); const date = el("wDate").value || todayStr();
@@ -701,6 +705,7 @@
   }
   function renderWeightChart() { if (weightChart) weightChart.destroy(); weightChart = lineChart("weights", "weightChart", "kg", {}); }
 
+  /* ---------- Mood ---------- */
   async function logMood(score) {
     if (!SPACE_ID || !KEY || !score) return;
     const date = todayStr(); const note = el("moodNote").value.trim();
@@ -741,6 +746,7 @@
     box.textContent = `${s.pct}% in sync · ${label} · ${s.n} shared day${s.n === 1 ? "" : "s"}`;
   }
 
+  /* ---------- Plants ---------- */
   /* ---------- AI weekly insight (Gemini via Firebase AI Logic) ---------- */
   function renderAI() {
     const out = el("aiOut"), meta = el("aiMeta"); if (!out) return;
@@ -822,38 +828,10 @@ Plants overdue: ${overdue}`;
     ul.querySelectorAll("[data-delp]").forEach((b) => b.addEventListener("click", () => deletePlant(b.dataset.delp)));
   }
 
-  function tinyHash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
   function docId(raw) { return String(raw).replace(/[^\w-]/g, "_").slice(0, 120); }
-  function parseCsv(text) {
-    const rows = []; let row = [], cur = "", q = false;
-    for (let i = 0; i < text.length; i++) { const c = text[i];
-      if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
-      else if (c === '"') q = true; else if (c === ",") { row.push(cur); cur = ""; } else if (c === "\n") { row.push(cur); rows.push(row); row = []; cur = ""; } else if (c !== "\r") cur += c;
-    }
-    if (cur !== "" || row.length) { row.push(cur); rows.push(row); } return rows;
-  }
   async function putEnc(coll, id, obj, uidVal) { return spaceRef().collection(coll).doc(docId(id)).set({ uid: uidVal, enc: await encStr(JSON.stringify(obj)) }); }
-  async function importOldData() {
-    const msg = el("settingsMsg"); if (!SPACE_ID || !KEY) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Sign in and unlock first."; return; }
-    const csvFile = el("impCsv").files[0], jsonFile = el("impJson").files[0];
-    if (!csvFile && !jsonFile) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Choose at least one file."; return; }
-    msg.className = "mt-3 text-center text-xs text-accent"; msg.textContent = "Importing…";
-    try {
-      const nameToUid = {}; members().forEach((m) => { if (m.name) nameToUid[m.name.toLowerCase()] = m.uid; });
-      const uidFor = (name) => (name && nameToUid[String(name).toLowerCase()]) || ME.uid;
-      const writes = []; let count = 0;
-      if (csvFile) { const rows = parseCsv(await csvFile.text());
-        for (let i = 1; i < rows.length; i++) { const r = rows[i]; if (!r || r.length < 3) continue; const date = r[0], user = r[1], habit = r[2]; if (!habit || !user) continue; const ts = date ? new Date(date) : new Date(); const timestamp = isNaN(ts) ? new Date().toISOString() : ts.toISOString(); writes.push(putEnc("logs", "imp-" + tinyHash(user + "|" + habit + "|" + timestamp), { user, habit, timestamp }, uidFor(user))); count++; } }
-      if (jsonFile) { const data = JSON.parse(await jsonFile.text());
-        (data.shopping || []).forEach((it) => { writes.push(putEnc("items", it.id || ("imp-" + tinyHash("s" + it.text + it.ts)), { list: "shopping", text: it.text, user: it.user, ts: it.ts || new Date().toISOString() }, uidFor(it.user))); count++; });
-        (data.todo || []).forEach((it) => { writes.push(putEnc("items", it.id || ("imp-" + tinyHash("t" + it.text + it.ts)), { list: "todo", text: it.text, user: it.user, ts: it.ts || new Date().toISOString() }, uidFor(it.user))); count++; });
-        (data.notes || []).forEach((n) => { const ts = n.ts || new Date().toISOString(); writes.push(putEnc("notes", n.id || ("imp-" + tinyHash("n" + n.text + ts)), { text: n.text, user: n.user, ts, revealAt: n.revealAt || nextReveal(new Date(ts)).toISOString() }, uidFor(n.user))); count++; }); }
-      await Promise.all(writes);
-      msg.className = "mt-3 text-center text-xs text-[#0a7d2c]"; msg.textContent = `Imported ${count} item${count === 1 ? "" : "s"} ✓`;
-      renderToday(); renderLists(); renderVault(); renderInsights();
-    } catch (err) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Import failed: " + (err && err.message ? err.message : err); }
-  }
 
+  /* ---------- Habits ---------- */
   /* ---------- Configurable habits ---------- */
   function habitList() { return STATE.habits.length ? [...STATE.habits].sort((a, b) => (a.order || 0) - (b.order || 0)) : HABITS; }
   async function seedDefaultHabits() {
@@ -909,6 +887,7 @@ Plants overdue: ${overdue}`;
     el("todayList").innerHTML = mine.map((l) => { const h = habitList().find((x) => x.label === l.habit); const emoji = h ? h.emoji : "•"; const time = new Date(l.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); const badge = l._pending ? `<span class="text-[#ff9f0a] text-[11px]">• saving</span>` : `<span class="text-accent text-[11px]">✓</span>`; return `<li class="flex items-center justify-between"><span class="flex items-center gap-2"><span>${emoji}</span><span>${escapeHtml(l.habit)}</span></span><span class="flex items-center gap-3 text-sub text-xs">${time} ${badge}</span></li>`; }).join("");
   }
 
+  /* ---------- Shopping / To-Do ---------- */
   async function addFromInput(list, inputId) {
     const input = el(inputId); const text = input.value.trim(); if (!text || !SPACE_ID || !KEY) return;
     input.value = ""; showToast(`Added to ${list === "shopping" ? "shopping" : "to-do"}`);
@@ -923,6 +902,7 @@ Plants overdue: ${overdue}`;
     ul.querySelectorAll(".done-btn").forEach((b) => b.addEventListener("click", () => removeItem(b.dataset.done, b.closest("li"))));
   }
 
+  /* ---------- Friday Vault ---------- */
   function nextReveal(from = new Date()) { const d = new Date(from); let days = (VAULT_REVEAL_DOW - d.getDay() + 7) % 7; let c = new Date(d.getFullYear(), d.getMonth(), d.getDate() + days, VAULT_REVEAL_HOUR, 0, 0, 0); if (c <= d) c = new Date(c.getTime() + 7 * 86400000); return c; }
   function isVaultOpen(now = new Date()) { const d = new Date(now); let back = (d.getDay() - VAULT_REVEAL_DOW + 7) % 7; let openAt = new Date(d.getFullYear(), d.getMonth(), d.getDate() - back, VAULT_REVEAL_HOUR, 0, 0, 0); if (openAt > d) openAt = new Date(openAt.getTime() - 7 * 86400000); const closeAt = new Date(openAt.getTime() + VAULT_OPEN_HOURS * 3600000); return now >= openAt && now < closeAt ? closeAt : null; }
   const isRevealed = (n) => n.revealAt && new Date() >= new Date(n.revealAt);
@@ -945,6 +925,7 @@ Plants overdue: ${overdue}`;
     listEl.innerHTML = revealed.map((n) => { const opened = new Date(n.revealAt).toLocaleDateString([], { month: "short", day: "numeric" }); return `<li class="rounded-2xl bg-card border border-line card-shadow p-4"><p class="text-sm text-ink whitespace-pre-wrap">${escapeHtml(n.text)}</p><div class="mt-2 flex items-center justify-between text-[11px] text-sub"><span>— ${escapeHtml(n.user || "")}</span><span>opened ${opened}</span></div></li>`; }).join("");
   }
 
+  /* ---------- Insights ---------- */
   function startOfWeek(d = new Date()) { const x = new Date(d); const monIdx = (x.getDay() + 6) % 7; x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - monIdx); return x; }
   function insightChip(emoji, a, b) { return `<span class="shrink-0 flex items-center gap-1.5 rounded-full bg-card border border-line card-shadow px-3 py-1.5 text-xs"><span class="text-base">${emoji}</span><span class="text-partnerA font-semibold">${a}</span><span class="text-sub">·</span><span class="text-partnerB font-semibold">${b}</span></span>`; }
   function renderInsights() {
@@ -957,6 +938,7 @@ Plants overdue: ${overdue}`;
     box.innerHTML = chips.length ? chips.join("") : `<span class="text-xs text-sub italic px-1">No activity yet this week — log something to see insights.</span>`;
   }
 
+  /* ---------- Status + toast ---------- */
   /* ---------- Documents (encrypted, chunked in Firestore) ---------- */
   const DOC_CHUNK = 600000;
   function abToB64(buf) { let bin = ""; const b = new Uint8Array(buf); const CH = 0x8000; for (let i = 0; i < b.length; i += CH) bin += String.fromCharCode.apply(null, b.subarray(i, i + CH)); return btoa(bin); }
@@ -1000,6 +982,39 @@ Plants overdue: ${overdue}`;
       await spaceRef().collection("files").doc(meta.id).delete();
     } catch (e) { console.warn("delete file failed", e); }
   }
+  let currentPreviewUrl = null;
+  function backToDocList() {
+    if (el("docPreviewWrap")) el("docPreviewWrap").classList.add("hidden");
+    if (el("docList")) el("docList").classList.remove("hidden");
+    if (el("docHint")) el("docHint").classList.remove("hidden");
+    if (currentPreviewUrl) { URL.revokeObjectURL(currentPreviewUrl); currentPreviewUrl = null; }
+    if (el("docPreview")) el("docPreview").innerHTML = "";
+    if (el("docDownload")) el("docDownload").classList.add("hidden");
+  }
+  async function previewFile(meta) {
+    const wrap = el("docPreviewWrap"), area = el("docPreview"), dl = el("docDownload");
+    try {
+      el("docList").classList.add("hidden"); el("docHint").classList.add("hidden"); wrap.classList.remove("hidden");
+      area.innerHTML = `<p class="text-sub text-sm text-center py-8">Loading ${escapeHtml(meta.name || "file")}…</p>`;
+      const snap = await spaceRef().collection("fileChunks").where("fileId", "==", meta.id).get();
+      const chunks = snap.docs.map((d) => d.data()).sort((a, b) => a.idx - b.idx);
+      let b64 = ""; for (const c of chunks) b64 += await decStr(c.enc);
+      if (currentPreviewUrl) URL.revokeObjectURL(currentPreviewUrl);
+      const url = URL.createObjectURL(new Blob([b64ToBytes(b64)], { type: meta.type || "application/octet-stream" }));
+      currentPreviewUrl = url;
+      const t = meta.type || "";
+      if (t.startsWith("image/")) area.innerHTML = `<img src="${url}" class="max-w-full max-h-[68vh] rounded-xl mx-auto" />`;
+      else if (t.includes("pdf") || t.startsWith("text/")) area.innerHTML = `<iframe src="${url}" class="w-full rounded-xl border border-line" style="height:68vh"></iframe>`;
+      else area.innerHTML = `<p class="text-sub text-sm text-center py-8">Preview isn't available for this file type — use Download below.</p>`;
+      dl.href = url; dl.setAttribute("download", meta.name || "file"); dl.classList.remove("hidden");
+    } catch (e) { area.innerHTML = `<p class="text-[#c00] text-sm text-center py-8">Couldn't open this file.</p>`; console.warn(e); }
+  }
+  async function renameFile(meta) {
+    const name = (window.prompt("Rename document", meta.name || "") || "").trim();
+    if (!name || name === meta.name) return;
+    try { await putEnc("files", meta.id, { name, type: meta.type, size: meta.size, n: meta.n, at: meta.at || new Date().toISOString(), by: meta.by || ME.name }, meta.uid || ME.uid); showToast("Renamed"); }
+    catch (e) { console.warn("rename failed", e); }
+  }
   function renderDocs() {
     const files = [...STATE.files].sort((a, b) => (b.at || "").localeCompare(a.at || ""));
     const cnt = files.length;
@@ -1007,13 +1022,13 @@ Plants overdue: ${overdue}`;
     if (el("docCounter")) el("docCounter").textContent = `${cnt}/100`;
     const ml = el("docList");
     if (ml) {
-      ml.innerHTML = cnt ? files.map((f) => `<li><button data-openf="${f.id}" class="w-full flex items-center gap-3 rounded-xl bg-card border border-line card-shadow px-3 py-3 text-left active:scale-[.99] transition"><span class="text-xl">${fileIcon(f.type)}</span><span class="min-w-0 flex-1"><span class="block text-sm text-ink truncate">${escapeHtml(f.name || "file")}</span><span class="block text-[11px] text-sub">${fmtSize(f.size || 0)}</span></span><span class="text-accent text-xs font-semibold">Open</span></button></li>`).join("") : `<li class="text-sub italic text-sm py-2">No documents yet — add some in Profile → Documents.</li>`;
-      ml.querySelectorAll("[data-openf]").forEach((b) => b.addEventListener("click", () => { const f = STATE.files.find((x) => x.id === b.dataset.openf); if (f) openFile(f); }));
+      ml.innerHTML = cnt ? files.map((f) => `<li><button data-prev="${f.id}" class="w-full flex items-center gap-3 rounded-xl bg-card border border-line card-shadow px-3 py-3 text-left active:scale-[.99] transition"><span class="text-xl">${fileIcon(f.type)}</span><span class="min-w-0 flex-1"><span class="block text-sm text-ink truncate">${escapeHtml(f.name || "file")}</span><span class="block text-[11px] text-sub">${fmtSize(f.size || 0)}</span></span><span class="text-accent text-xs font-semibold">View ›</span></button></li>`).join("") : `<li class="text-sub italic text-sm py-2">No documents yet — add some in Profile → Documents.</li>`;
+      ml.querySelectorAll("[data-prev]").forEach((b) => b.addEventListener("click", () => { const f = STATE.files.find((x) => x.id === b.dataset.prev); if (f) previewFile(f); }));
     }
     const sl = el("docCfgList");
     if (sl) {
-      sl.innerHTML = cnt ? files.map((f) => `<li class="flex items-center gap-2 rounded-xl bg-appbg border border-line px-3 py-2"><span class="text-lg">${fileIcon(f.type)}</span><span class="min-w-0 flex-1"><span class="block text-sm text-ink truncate">${escapeHtml(f.name || "file")}</span><span class="block text-[10px] text-sub">${fmtSize(f.size || 0)}</span></span><button data-openf2="${f.id}" class="text-accent text-xs px-2 py-1">Open</button><button data-delf="${f.id}" class="text-sub text-xs px-2 py-1">Remove</button></li>`).join("") : `<li class="text-sub italic text-xs py-1">No documents yet.</li>`;
-      sl.querySelectorAll("[data-openf2]").forEach((b) => b.addEventListener("click", () => { const f = STATE.files.find((x) => x.id === b.dataset.openf2); if (f) openFile(f); }));
+      sl.innerHTML = cnt ? files.map((f) => `<li class="flex items-center gap-2 rounded-xl bg-appbg border border-line px-3 py-2"><span class="text-lg">${fileIcon(f.type)}</span><span class="min-w-0 flex-1"><span class="block text-sm text-ink truncate">${escapeHtml(f.name || "file")}</span><span class="block text-[10px] text-sub">${fmtSize(f.size || 0)}</span></span><button data-renf="${f.id}" class="text-accent text-xs px-2 py-1">Rename</button><button data-delf="${f.id}" class="text-sub text-xs px-2 py-1">Remove</button></li>`).join("") : `<li class="text-sub italic text-xs py-1">No documents yet.</li>`;
+      sl.querySelectorAll("[data-renf]").forEach((b) => b.addEventListener("click", () => { const f = STATE.files.find((x) => x.id === b.dataset.renf); if (f) renameFile(f); }));
       sl.querySelectorAll("[data-delf]").forEach((b) => b.addEventListener("click", () => { const f = STATE.files.find((x) => x.id === b.dataset.delf); if (f) deleteFile(f); }));
     }
   }
@@ -1032,6 +1047,7 @@ Plants overdue: ${overdue}`;
   let toastTimer;
   function showToast(msg) { const toast = el("toast"); toast.textContent = msg; toast.style.opacity = "1"; clearTimeout(toastTimer); toastTimer = setTimeout(() => (toast.style.opacity = "0"), 1600); }
 
+  /* ---------- Service worker ---------- */
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     const swCode = `
       const CACHE = 'coupled-v11';
