@@ -81,6 +81,12 @@
       <button id="profileBtn" title="Profile" class="hidden h-9 w-9 rounded-full overflow-hidden border border-line active:scale-95 transition"></button>
     </header>
 
+    <!-- LOADING -->
+    <section id="loadingView" class="hidden flex-1 flex flex-col items-center justify-center fade-in">
+      <div class="h-10 w-10 rounded-full border-4 border-line border-t-accent animate-spin mb-4"></div>
+      <p id="loadingMsg" class="text-sub text-sm">Loading…</p>
+    </section>
+
     <!-- SIGN IN -->
     <section id="authView" class="hidden flex-1 flex flex-col justify-center fade-in">
       <div class="text-center mb-8">
@@ -473,6 +479,7 @@
     window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredPrompt = e; document.querySelectorAll(".install-btn").forEach((b) => b.classList.remove("hidden")); });
     window.addEventListener("appinstalled", () => { deferredPrompt = null; document.querySelectorAll(".install-btn,.ios-hint").forEach((x) => x.classList.add("hidden")); });
     initInstallHints();
+    showLoading("Loading…");
     if (!firebaseConfigured()) { showAuth("Firebase isn't set up yet — add your config in the code."); return; }
     firebase.initializeApp(FIREBASE_CONFIG);
     auth = firebase.auth(); db = firebase.firestore();
@@ -529,7 +536,7 @@
     teardownListeners(); KEY = null;
     if (!user) { ME = null; SPACE_ID = null; SPACE_DOC = null; showAuth(""); return; }
     ME = { uid: user.uid, email: (user.email || "").toLowerCase(), name: user.displayName || (user.email || "").split("@")[0], photo: user.photoURL || "" };
-    showAuth("Setting up your space…");
+    showLoading("Setting up your space…");
     try { await ensureSpace(); await openSpaceKey(); }
     catch (err) { showAuth("Couldn't open your space: " + (err && err.message ? err.message : err)); }
   }
@@ -572,7 +579,9 @@
   async function ensureSpace() {
     if (booting) return; booting = true;
     try {
-      const mine = await db.collection("spaces").where("members", "array-contains", ME.uid).limit(1).get();
+      let mine = { empty: true, docs: [] };
+      try { mine = await db.collection("spaces").where("members", "array-contains", ME.uid).limit(1).get({ source: "cache" }); } catch (e) { mine = { empty: true, docs: [] }; }
+      if (mine.empty) mine = await db.collection("spaces").where("members", "array-contains", ME.uid).limit(1).get();
       if (!mine.empty) { SPACE_ID = mine.docs[0].id; SPACE_DOC = mine.docs[0].data(); return; }
       const inv = await db.collection("invites").doc(ME.email).get();
       if (inv.exists) {
@@ -610,7 +619,15 @@
     if (ME && ME.photo) return `<img src="${ME.photo}" referrerpolicy="no-referrer" class="h-full w-full object-cover" />`;
     return `<span class="h-full w-full grid place-items-center bg-accent text-white font-semibold ${size}">${escapeHtml(((ME && ME.name) || "?").trim()[0].toUpperCase())}</span>`;
   }
+  function showLoading(msg) {
+    el("loadingView").classList.remove("hidden"); el("loadingView").classList.add("flex");
+    el("authView").classList.add("hidden"); el("authView").classList.remove("flex");
+    el("keyView").classList.add("hidden"); el("keyView").classList.remove("flex");
+    el("appView").classList.add("hidden"); el("profileBtn").classList.add("hidden"); el("tabBar").classList.add("hidden");
+    if (msg !== undefined) el("loadingMsg").textContent = msg;
+  }
   function showAuth(msg) {
+    el("loadingView").classList.add("hidden"); el("loadingView").classList.remove("flex");
     el("authView").classList.remove("hidden"); el("authView").classList.add("flex");
     el("keyView").classList.add("hidden"); el("keyView").classList.remove("flex");
     el("appView").classList.add("hidden"); el("profileBtn").classList.add("hidden"); el("tabBar").classList.add("hidden");
@@ -623,6 +640,7 @@
     el("keyBtn").textContent = mode === "create" ? "Encrypt & continue" : "Unlock";
     el("keyTips").classList.toggle("hidden", mode !== "create");
     el("keyMsg").textContent = "";
+    el("loadingView").classList.add("hidden"); el("loadingView").classList.remove("flex");
     el("authView").classList.add("hidden"); el("authView").classList.remove("flex");
     el("keyView").classList.remove("hidden"); el("keyView").classList.add("flex");
     el("appView").classList.add("hidden"); el("profileBtn").classList.add("hidden"); el("tabBar").classList.add("hidden");
@@ -630,6 +648,7 @@
   function enterApp() {
     el("currentUser").textContent = ME.name;
     el("profileBtn").innerHTML = avatarHtml("text-sm");
+    el("loadingView").classList.add("hidden"); el("loadingView").classList.remove("flex");
     el("authView").classList.add("hidden"); el("authView").classList.remove("flex");
     el("keyView").classList.add("hidden"); el("keyView").classList.remove("flex");
     el("appView").classList.remove("hidden"); el("profileBtn").classList.remove("hidden"); el("tabBar").classList.remove("hidden");
@@ -1050,7 +1069,7 @@ Plants overdue: ${overdue}`;
   /* ---------- Service worker ---------- */
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     const swCode = `
-      const CACHE = 'coupled-v11';
+      const CACHE = 'coupled-v12';
       self.addEventListener('install', (e) => { self.skipWaiting(); });
       self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))); self.clients.claim(); });
       self.addEventListener('fetch', (e) => { const req = e.request; if (req.method !== 'GET') return; const url = new URL(req.url); if (url.origin !== location.origin) return; e.respondWith(fetch(req).then((res) => { const c = res.clone(); caches.open(CACHE).then((x) => x.put(req, c)).catch(()=>{}); return res; }).catch(() => caches.match(req))); });
