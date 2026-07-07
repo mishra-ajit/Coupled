@@ -317,13 +317,8 @@
         <h2 class="text-lg font-bold">📎 Documents</h2>
         <button id="docsClose" class="h-9 w-9 grid place-items-center rounded-full hover:bg-appbg text-sub active:scale-95 transition">✕</button>
       </div>
-      <div id="docPreviewWrap" class="hidden">
-        <button id="docBack" class="mb-3 text-sm text-accent font-semibold active:scale-95 transition">← All documents</button>
-        <div id="docPreview"></div>
-        <a id="docDownload" class="hidden mt-3 inline-block text-sm text-accent font-semibold" download>⬇ Download</a>
-      </div>
       <ul id="docList" class="space-y-2"></ul>
-      <p id="docHint" class="mt-3 text-[11px] text-sub text-center">Tap a document to preview it. Rename or remove in Profile → Documents.</p>
+      <p id="docHint" class="mt-3 text-[11px] text-sub text-center">Tap a document to preview it inline — tap again to collapse. Rename or remove in Profile → Documents.</p>
     </div>
   </div>
 
@@ -510,10 +505,9 @@
     el("habLabel").addEventListener("keydown", (e) => { if (e.key === "Enter") addHabit(); });
     document.querySelectorAll(".tab-btn").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
     document.querySelectorAll(".install-btn").forEach((b) => b.addEventListener("click", doInstall));
-    el("docsOpen").addEventListener("click", () => { renderDocs(); backToDocList(); el("docsModal").classList.remove("hidden"); });
-    el("docsClose").addEventListener("click", () => { backToDocList(); el("docsModal").classList.add("hidden"); });
-    el("docsModal").addEventListener("click", (ev) => { if (ev.target === el("docsModal")) { backToDocList(); el("docsModal").classList.add("hidden"); } });
-    el("docBack").addEventListener("click", backToDocList);
+    el("docsOpen").addEventListener("click", () => { renderDocs(); el("docsModal").classList.remove("hidden"); });
+    el("docsClose").addEventListener("click", closeDocsModal);
+    el("docsModal").addEventListener("click", (ev) => { if (ev.target === el("docsModal")) closeDocsModal(); });
     el("docInput").addEventListener("change", () => addFiles(el("docInput").files));
     document.querySelectorAll(".sub-btn").forEach((b) => b.addEventListener("click", () => switchSub(b.dataset.sub)));
     el("shopAdd").addEventListener("click", () => addFromInput("shopping", "shopInput"));
@@ -1004,32 +998,33 @@ Plants overdue: ${overdue}`;
       await spaceRef().collection("files").doc(meta.id).delete();
     } catch (e) { console.warn("delete file failed", e); }
   }
-  let currentPreviewUrl = null;
-  function backToDocList() {
-    if (el("docPreviewWrap")) el("docPreviewWrap").classList.add("hidden");
-    if (el("docList")) el("docList").classList.remove("hidden");
-    if (el("docHint")) el("docHint").classList.remove("hidden");
-    if (currentPreviewUrl) { URL.revokeObjectURL(currentPreviewUrl); currentPreviewUrl = null; }
-    if (el("docPreview")) el("docPreview").innerHTML = "";
-    if (el("docDownload")) el("docDownload").classList.add("hidden");
+  const inlinePreviewUrls = new Map(); // fileId -> object URL, cached while the Docs modal stays open
+  function closeDocsModal() {
+    inlinePreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+    inlinePreviewUrls.clear();
+    el("docsModal").classList.add("hidden");
   }
-  async function previewFile(meta) {
-    const wrap = el("docPreviewWrap"), area = el("docPreview"), dl = el("docDownload");
+  async function toggleInlinePreview(meta) {
+    const box = el("docInline-" + meta.id), chev = document.querySelector(`[data-chev="${meta.id}"]`);
+    if (!box) return;
+    const isOpen = !box.classList.contains("hidden");
+    if (isOpen) { box.classList.add("hidden"); if (chev) chev.textContent = "›"; return; }
+    box.classList.remove("hidden"); if (chev) chev.textContent = "⌄";
+    if (inlinePreviewUrls.has(meta.id)) return; // already loaded — just re-show the cached preview
+    box.innerHTML = `<p class="text-sub text-sm text-center py-4">Loading ${escapeHtml(meta.name || "file")}…</p>`;
     try {
-      el("docList").classList.add("hidden"); el("docHint").classList.add("hidden"); wrap.classList.remove("hidden");
-      area.innerHTML = `<p class="text-sub text-sm text-center py-8">Loading ${escapeHtml(meta.name || "file")}…</p>`;
       const snap = await spaceRef().collection("fileChunks").where("fileId", "==", meta.id).get();
       const chunks = snap.docs.map((d) => d.data()).sort((a, b) => a.idx - b.idx);
       let b64 = ""; for (const c of chunks) b64 += await decStr(c.enc);
-      if (currentPreviewUrl) URL.revokeObjectURL(currentPreviewUrl);
       const url = URL.createObjectURL(new Blob([b64ToBytes(b64)], { type: meta.type || "application/octet-stream" }));
-      currentPreviewUrl = url;
+      inlinePreviewUrls.set(meta.id, url);
       const t = meta.type || "";
-      if (t.startsWith("image/")) area.innerHTML = `<img src="${url}" class="max-w-full max-h-[68vh] rounded-xl mx-auto" />`;
-      else if (t.includes("pdf") || t.startsWith("text/")) area.innerHTML = `<iframe src="${url}" class="w-full rounded-xl border border-line" style="height:68vh"></iframe>`;
-      else area.innerHTML = `<p class="text-sub text-sm text-center py-8">Preview isn't available for this file type — use Download below.</p>`;
-      dl.href = url; dl.setAttribute("download", meta.name || "file"); dl.classList.remove("hidden");
-    } catch (e) { area.innerHTML = `<p class="text-[#c00] text-sm text-center py-8">Couldn't open this file.</p>`; console.warn(e); }
+      let inner;
+      if (t.startsWith("image/")) inner = `<img src="${url}" class="max-w-full max-h-[50vh] rounded-lg mx-auto" />`;
+      else if (t.includes("pdf") || t.startsWith("text/")) inner = `<iframe src="${url}" class="w-full rounded-lg border border-line" style="height:50vh"></iframe>`;
+      else inner = `<p class="text-sub text-sm text-center py-4">Preview isn't available for this file type — use Download below.</p>`;
+      box.innerHTML = `${inner}<a href="${url}" download="${escapeHtml(meta.name || "file")}" class="mt-2 inline-block text-sm text-accent font-semibold">⬇ Download</a>`;
+    } catch (e) { box.innerHTML = `<p class="text-[#c00] text-sm text-center py-4">Couldn't open this file.</p>`; console.warn(e); }
   }
   async function renameFile(meta) {
     const name = (window.prompt("Rename document", meta.name || "") || "").trim();
@@ -1044,8 +1039,8 @@ Plants overdue: ${overdue}`;
     if (el("docCounter")) el("docCounter").textContent = `${cnt}/100`;
     const ml = el("docList");
     if (ml) {
-      ml.innerHTML = cnt ? files.map((f) => `<li><button data-prev="${f.id}" class="w-full flex items-center gap-3 rounded-xl bg-card border border-line card-shadow px-3 py-3 text-left active:scale-[.99] transition"><span class="text-xl">${fileIcon(f.type)}</span><span class="min-w-0 flex-1"><span class="block text-sm text-ink truncate">${escapeHtml(f.name || "file")}</span><span class="block text-[11px] text-sub">${fmtSize(f.size || 0)}</span></span><span class="text-accent text-xs font-semibold">View ›</span></button></li>`).join("") : `<li class="text-sub italic text-sm py-2">No documents yet — add some in Profile → Documents.</li>`;
-      ml.querySelectorAll("[data-prev]").forEach((b) => b.addEventListener("click", () => { const f = STATE.files.find((x) => x.id === b.dataset.prev); if (f) previewFile(f); }));
+      ml.innerHTML = cnt ? files.map((f) => `<li><button data-prev="${f.id}" class="w-full flex items-center gap-3 rounded-xl bg-card border border-line card-shadow px-3 py-3 text-left active:scale-[.99] transition"><span class="text-xl">${fileIcon(f.type)}</span><span class="min-w-0 flex-1"><span class="block text-sm text-ink truncate">${escapeHtml(f.name || "file")}</span><span class="block text-[11px] text-sub">${fmtSize(f.size || 0)}</span></span><span class="text-accent text-xs font-semibold" data-chev="${f.id}">›</span></button><div id="docInline-${f.id}" class="hidden mt-1 rounded-xl border border-line bg-white p-3"></div></li>`).join("") : `<li class="text-sub italic text-sm py-2">No documents yet — add some in Profile → Documents.</li>`;
+      ml.querySelectorAll("[data-prev]").forEach((b) => b.addEventListener("click", () => { const f = STATE.files.find((x) => x.id === b.dataset.prev); if (f) toggleInlinePreview(f); }));
     }
     const sl = el("docCfgList");
     if (sl) {
