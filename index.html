@@ -438,7 +438,7 @@
   const VERIFIER_TEXT = "sync-habits-verify-v1";
   let KEY = null;
   const passCacheKey = () => "sh_pass_" + SPACE_ID;
-  const toB64 = (b) => btoa(String.fromCharCode.apply(null, new Uint8Array(b)));
+  const toB64 = (b) => { const bytes = new Uint8Array(b); let bin = ""; const CH = 0x8000; for (let i = 0; i < bytes.length; i += CH) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CH)); return btoa(bin); };
   const fromB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
   async function deriveKey(passphrase, salt) {
     const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(passphrase), "PBKDF2", false, ["deriveKey"]);
@@ -958,7 +958,7 @@ Plants overdue: ${overdue}`;
   }
 
   /* ---------- Documents (encrypted, chunked in Firestore) ---------- */
-  const DOC_CHUNK = 700000;
+  const DOC_CHUNK = 600000;
   function abToB64(buf) { let bin = ""; const b = new Uint8Array(buf); const CH = 0x8000; for (let i = 0; i < b.length; i += CH) bin += String.fromCharCode.apply(null, b.subarray(i, i + CH)); return btoa(bin); }
   function b64ToBytes(b64) { const bin = atob(b64); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return bytes; }
   function fmtSize(b) { return b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB"; }
