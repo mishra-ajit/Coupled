@@ -16,7 +16,39 @@ A private, offline-first Progressive Web App for two partners — habit tracking
 - **Frontend:** one file — `index.html` (vanilla JS + Tailwind via CDN)
 - **Backend:** Firebase — Google Authentication + Cloud Firestore (real-time + offline cache), free Spark plan
 - **Crypto:** Web Crypto API — PBKDF2 → AES-256-GCM
-- **Hosting:** any static host (e.g. Netlify), auto-deployed from this repo
+- **Hosting:** [GitHub Pages](https://mishra-ajit.github.io/Coupled/), auto-deployed from this repo's `main` branch
+
+## Architecture
+
+```mermaid
+graph TD
+    subgraph Client["Client (Browser / PWA)"]
+        A["index.html<br/>vanilla JS + Tailwind CDN"]
+        A --> B["Service Worker<br/>offline cache, installable"]
+        A --> C["Web Crypto API<br/>PBKDF2 → AES-256-GCM"]
+    end
+
+    subgraph Hosting["Hosting"]
+        H["GitHub Pages<br/>mishra-ajit.github.io/Coupled"]
+    end
+
+    subgraph Firebase["Firebase (Spark free plan)"]
+        D["Firebase Auth<br/>Google Sign-In (signInWithPopup)"]
+        E["Cloud Firestore<br/>real-time sync + offline cache"]
+    end
+
+    H -- serves --> A
+    A -- "sign in" --> D
+    A -- "encrypted reads/writes" --> E
+    C -. "encrypt before write / decrypt after read" .-> E
+
+    subgraph Data["Firestore data model"]
+        E --> F["spaces/{id}<br/>members, invites, salt, verifier"]
+        F --> G["logs / items / notes<br/>each doc: { uid, enc }"]
+    end
+```
+
+The client is a single static `index.html` served from GitHub Pages — there is no application server. It talks directly to Firebase: Google Sign-In for auth, and Firestore for real-time, offline-capable data sync. Everything that isn't account/membership metadata is encrypted client-side before it ever reaches Firestore, so the database only ever holds ciphertext.
 
 ## Repository layout
 | File | Purpose |
