@@ -1030,7 +1030,6 @@ Plants overdue: ${overdue}`;
     el("pAiStatus").textContent = "";
     if (!file) return;
     if (!window.coupledAIImage) { el("pAiStatus").textContent = window.coupledAIError || "Plant AI is still loading — fill the details manually for now."; return; }
-    const hadName = !!el("pName").value.trim(), hadNotes = !!el("pNotes").value.trim(), hadCycle = !!el("pCycle").value.trim();
     plantAiBusy = true;
     el("pAiStatus").textContent = "Looking at the photo and filling the details…";
     try {
@@ -1046,9 +1045,9 @@ Base watering on typical indoor care. If the image is unclear, choose a conserva
       const name = String(info.name || "").trim();
       const desc = String(info.description || "").trim();
       const days = Math.max(1, Math.min(60, parseInt(info.wateringDays, 10) || 0));
-      if (name && !hadName) el("pName").value = name;
-      if (desc && !hadNotes) el("pNotes").value = desc;
-      if (days && !hadCycle) el("pCycle").value = days;
+      if (name) el("pName").value = name;
+      if (desc) el("pNotes").value = desc;
+      if (days) el("pCycle").value = days;
       el("pAiStatus").textContent = `Details filled${info.confidence ? " · confidence: " + info.confidence : ""}. Edit anything, then save.`;
     } catch (e) {
       el("pAiStatus").textContent = "Couldn't analyse the photo. You can still add the plant manually.";
