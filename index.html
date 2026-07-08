@@ -521,12 +521,16 @@
   function doSignIn() {
     const provider = new firebase.auth.GoogleAuthProvider();
     el("authMsg").textContent = "Opening Google…";
-    // Use signInWithRedirect instead of signInWithPopup: Chrome's Cross-Origin-Opener-Policy
-    // handling can silently block the popup's window.closed/postMessage communication back to
-    // the opener on hosts you don't control response headers for (e.g. GitHub Pages), leaving
-    // sign-in stuck after picking an account with no error ever thrown. Redirect avoids this.
-    auth.signInWithRedirect(provider).catch((err) => {
-      el("authMsg").textContent = "Sign-in failed: " + (err && err.message ? err.message : err);
+    // signInWithPopup is used deliberately here (not signInWithRedirect): our authDomain
+    // (coupled-7b948.firebaseapp.com) is a different domain than the app's host
+    // (mishra-ajit.github.io), and browsers that block third-party storage access can silently
+    // break signInWithRedirect's cross-origin state handoff — it just returns to the sign-in
+    // screen with no error. Firebase's own docs list signInWithPopup as the documented fix for
+    // this exact case on hosts other than Firebase Hosting. Fall back to redirect only if the
+    // popup itself is blocked/unsupported.
+    auth.signInWithPopup(provider).catch((err) => {
+      if (err && (err.code === "auth/popup-blocked" || err.code === "auth/cancelled-popup-request" || err.code === "auth/operation-not-supported-in-this-environment")) auth.signInWithRedirect(provider);
+      else el("authMsg").textContent = "Sign-in failed: " + (err && err.message ? err.message : err);
     });
   }
   async function handleAuth(user) {
