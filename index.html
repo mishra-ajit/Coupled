@@ -38,6 +38,11 @@
           const ai = getAI(app, { backend: new GoogleAIBackend() });
           const model = getGenerativeModel(ai, { model: "gemini-2.5-flash" });
           window.coupledAI = async (prompt) => (await model.generateContent(prompt)).response.text();
+          window.coupledAIImage = async (prompt, imageDataUrl) => {
+            const [meta, data] = String(imageDataUrl || "").split(",");
+            const mimeType = ((meta || "").match(/^data:(.*?);base64$/) || [])[1] || "image/jpeg";
+            return (await model.generateContent([prompt, { inlineData: { data, mimeType } }])).response.text();
+          };
           return;
         } catch (e) { /* try next version */ }
       }
@@ -215,12 +220,13 @@
       <section id="tabPlants" class="tab-panel hidden">
         <div class="rounded-2xl bg-card border border-line card-shadow p-4 mb-4 space-y-2">
           <input id="pName" type="text" placeholder="Plant name (e.g. Monstera)" class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
-          <input id="pNotes" type="text" placeholder="Notes — care tips, spot, type…" class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+          <textarea id="pNotes" rows="2" maxlength="500" placeholder="Notes — care tips, spot, type…" class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none resize-none"></textarea>
           <div class="flex gap-2">
             <input id="pCycle" type="number" min="1" inputmode="numeric" placeholder="Water every … days" class="flex-1 rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
             <label class="shrink-0 grid place-items-center rounded-xl bg-white border border-line px-4 text-sm text-sub cursor-pointer">📷<input id="pPhoto" type="file" accept="image/*" class="hidden" /></label>
           </div>
           <p id="pPhotoName" class="text-[11px] text-sub"></p>
+          <p id="pAiStatus" class="text-[11px] text-sub"></p>
           <button id="plantAdd" class="w-full rounded-full bg-accent hover:bg-accentdark text-white font-semibold py-3 active:scale-95 transition">Add plant</button>
         </div>
         <ul id="plantList" class="space-y-3"></ul>
@@ -627,7 +633,7 @@
   let auth = null, db = null, ME = null, SPACE_ID = null, SPACE_DOC = null;
   const STATE = { logs: [], items: [], notes: [], weights: [], plants: [], moods: [], ai: [], habits: [], files: [], financeTx: [] };
   const PENDING = { logs: false, items: false, notes: false, financeTx: false };
-  let unsub = [], ACTIVE_TAB = "habits", ACTIVE_SUB = "shopping", booting = false, weightChart = null, moodChart = null, financeCatChart = null, financeTrendChart = null, financeDailyBusy = false;
+  let unsub = [], ACTIVE_TAB = "habits", ACTIVE_SUB = "shopping", booting = false, weightChart = null, moodChart = null, financeCatChart = null, financeTrendChart = null, financeDailyBusy = false, plantPhotoData = "", plantAiBusy = false;
 
   function init() {
     buildHabitGrid(); wireUi();
@@ -659,7 +665,7 @@
     el("wSave").addEventListener("click", addWeight);
     el("wKg").addEventListener("keydown", (e) => { if (e.key === "Enter") addWeight(); });
     el("plantAdd").addEventListener("click", addPlant);
-    el("pPhoto").addEventListener("change", () => { const f = el("pPhoto").files[0]; el("pPhotoName").textContent = f ? ("📷 " + f.name) : ""; });
+    el("pPhoto").addEventListener("change", handlePlantPhotoSelected);
     el("vaultSeal").addEventListener("click", sealNote);
     el("moodPicker").addEventListener("click", (e) => { const b = e.target.closest("[data-mood]"); if (b) logMood(parseInt(b.dataset.mood, 10)); });
     el("aiBtn").addEventListener("click", generateInsight);
@@ -990,12 +996,53 @@ Plants overdue: ${overdue}`;
       img.onerror = reject; img.src = url;
     });
   }
+  function parsePlantAi(text) {
+    const raw = String(text || "").trim();
+    try {
+      const json = raw.match(/\{[\s\S]*\}/);
+      if (json) return JSON.parse(json[0]);
+    } catch (e) {}
+    return {};
+  }
+  async function handlePlantPhotoSelected() {
+    const file = el("pPhoto").files[0];
+    plantPhotoData = "";
+    el("pPhotoName").textContent = file ? ("📷 " + file.name) : "";
+    el("pAiStatus").textContent = "";
+    if (!file) return;
+    if (!window.coupledAIImage) { el("pAiStatus").textContent = window.coupledAIError || "Plant AI is still loading — add details manually for now."; return; }
+    const hadName = !!el("pName").value.trim(), hadNotes = !!el("pNotes").value.trim(), hadCycle = !!el("pCycle").value.trim();
+    plantAiBusy = true;
+    el("pAiStatus").textContent = "Looking at the plant photo…";
+    try {
+      plantPhotoData = await compressImage(file, 768, 0.72);
+      const prompt = `Identify this houseplant from the image and suggest care details. Return ONLY compact JSON with keys:
+name: likely common plant name, or "Unknown plant" if unsure
+description: one friendly sentence with identifying/care notes
+wateringDays: recommended watering interval in days as a number
+confidence: high, medium, or low
+
+Base watering on typical indoor care. If the image is unclear, choose a conservative schedule and say so in description.`;
+      const info = parsePlantAi(await window.coupledAIImage(prompt, plantPhotoData));
+      const name = String(info.name || "").trim();
+      const desc = String(info.description || "").trim();
+      const days = Math.max(1, Math.min(60, parseInt(info.wateringDays, 10) || 0));
+      if (name && !hadName) el("pName").value = name;
+      if (desc && !hadNotes) el("pNotes").value = desc;
+      if (days && !hadCycle) el("pCycle").value = days;
+      el("pAiStatus").textContent = `AI suggested care details${info.confidence ? " · confidence: " + info.confidence : ""}. Review before saving.`;
+    } catch (e) {
+      el("pAiStatus").textContent = "Couldn't analyse the photo. You can still add the plant manually.";
+      console.warn("plant image analysis failed", e);
+    }
+    plantAiBusy = false;
+  }
   async function addPlant() {
     if (!SPACE_ID || !KEY) return;
     const name = el("pName").value.trim(); if (!name) { showToast("Give the plant a name"); return; }
     const notes = el("pNotes").value.trim(); const cycle = Math.max(1, parseInt(el("pCycle").value, 10) || 7); const file = el("pPhoto").files[0];
     el("plantAdd").disabled = true; el("plantAdd").textContent = "Adding…";
-    try { let photo = ""; if (file) { try { photo = await compressImage(file); } catch (e) { photo = ""; } } await spaceRef().collection("plants").add(await encPayload({ name, notes, cycle, lastWatered: new Date().toISOString(), photo })); el("pName").value = ""; el("pNotes").value = ""; el("pCycle").value = ""; el("pPhoto").value = ""; el("pPhotoName").textContent = ""; showToast("🪴 Plant added"); }
+    try { let photo = ""; if (file) { try { photo = plantPhotoData || await compressImage(file); } catch (e) { photo = ""; } } await spaceRef().collection("plants").add(await encPayload({ name, notes, cycle, lastWatered: new Date().toISOString(), photo })); el("pName").value = ""; el("pNotes").value = ""; el("pCycle").value = ""; el("pPhoto").value = ""; el("pPhotoName").textContent = ""; el("pAiStatus").textContent = ""; plantPhotoData = ""; showToast("🪴 Plant added"); }
     catch (e) { showToast("Couldn't add plant"); console.warn(e); }
     el("plantAdd").disabled = false; el("plantAdd").textContent = "Add plant";
   }

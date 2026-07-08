@@ -7,6 +7,7 @@ A private, offline-first Progressive Web App for two partners — habit tracking
 ## Features
 - ✅ **Habits** — tap to log; per-person weekly insights (side by side)
 - 🛒 **Shopping** & 📝 **To-Do** — shared lists, tick to remove, real-time
+- 🪴 **Plants** — photo-based AI suggestions for plant name, description, and watering cadence
 - 💶 **Money** — encrypted finance dashboard with Revolut CSV upload, manual entries, deduplication, budget progress, charts, AI insight, and a daily mindful-spending nudge
 - 🔒 **Friday Vault** — sealed notes that unlock every Friday 5pm, then live on as a shared history
 - 👫 **Spaces & invites** — sign in with Google, invite your partner by email; you both share one private space
