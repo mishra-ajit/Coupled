@@ -194,26 +194,23 @@
         </div>
       </section>
 
-      <!-- NEST (Shopping + To-Do) -->
+      <!-- NEST (custom shared lists) -->
       <section id="tabNest" class="tab-panel hidden">
-        <div class="flex gap-1 p-1 mb-4 rounded-full bg-card border border-line">
-          <button data-sub="shopping" class="sub-btn flex-1 rounded-full py-2 text-sm font-medium">🛒 Shopping</button>
-          <button data-sub="todo" class="sub-btn flex-1 rounded-full py-2 text-sm font-medium">📝 To-Do</button>
-        </div>
-        <div id="nestShopping">
-          <div class="flex gap-2 mb-4">
-            <input id="shopInput" type="text" enterkeyhint="done" placeholder="Add an item…" class="flex-1 rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
-            <button id="shopAdd" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-5 active:scale-95 transition">Add</button>
+        <div id="nestListTabs" class="flex gap-2 overflow-x-auto pb-2 mb-3 -mx-1 px-1"></div>
+        <div class="rounded-2xl bg-card border border-line card-shadow p-4 mb-4">
+          <div class="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <h3 id="nestActiveTitle" class="font-semibold text-[15px]">Shopping</h3>
+              <p id="nestActiveHint" class="text-[11px] text-sub">Shared list for things to buy.</p>
+            </div>
+            <span id="nestActiveCount" class="shrink-0 rounded-full bg-appbg border border-line px-2.5 py-1 text-[11px] text-sub">0 items</span>
           </div>
-          <ul id="shopList" class="space-y-2"></ul>
-        </div>
-        <div id="nestTodo" class="hidden">
-          <div class="flex gap-2 mb-4">
-            <input id="todoInput" type="text" enterkeyhint="done" placeholder="Add a task…" class="flex-1 rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
-            <button id="todoAdd" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-5 active:scale-95 transition">Add</button>
+          <div class="flex gap-2">
+            <input id="nestInput" type="text" enterkeyhint="done" placeholder="Add an item..." class="flex-1 rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+            <button id="nestAdd" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-5 active:scale-95 transition">Add</button>
           </div>
-          <ul id="todoList2" class="space-y-2"></ul>
         </div>
+        <ul id="nestList" class="space-y-2"></ul>
       </section>
 
       <!-- PLANTS -->
@@ -463,6 +460,15 @@
         <button id="habAdd" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-4 active:scale-95 transition">Add</button>
       </div>
 
+      <label class="block text-xs font-medium text-sub mb-1">Nest lists</label>
+      <p class="text-[11px] text-sub mb-2">Shopping is always first. Add shared lists like movies, books, food ideas, or travel plans.</p>
+      <ul id="listCfgList" class="mb-2 space-y-1.5"></ul>
+      <div class="flex gap-2 mb-5">
+        <input id="listEmoji" maxlength="4" placeholder="🎬" class="w-14 text-center rounded-xl bg-white border border-line px-2 py-2.5 text-lg focus:border-accent focus:outline-none" />
+        <input id="listLabel" type="text" maxlength="28" placeholder="Movie list, Books to read…" class="flex-1 rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+        <button id="listAdd" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-4 active:scale-95 transition">Add</button>
+      </div>
+
       <label class="block text-xs font-medium text-sub mb-1">Your space</label>
       <ul id="membersList" class="mb-4 space-y-1.5 text-sm"></ul>
 
@@ -518,6 +524,10 @@
     { key:"workout", label:"Workout", emoji:"🏋️" }, { key:"read", label:"Read", emoji:"📚" },
     { key:"hydrate", label:"Hydrate", emoji:"💧" }, { key:"meditate", label:"Meditate", emoji:"🧘" },
     { key:"sleep", label:"Sleep", emoji:"😴" }, { key:"eatwell", label:"Eat Well", emoji:"🥗" },
+  ];
+  const DEFAULT_LISTS = [
+    { key:"shopping", label:"Shopping", emoji:"🛒", hint:"Shared list for things to buy." },
+    { key:"todo", label:"To-Do", emoji:"📝", hint:"Shared list for tasks and small reminders." },
   ];
   const VAULT_REVEAL_DOW = 5, VAULT_REVEAL_HOUR = 17, VAULT_OPEN_HOURS = 24;
   const MOOD_EMOJI = ["", "😢", "🙁", "😐", "🙂", "😄"];
@@ -641,7 +651,7 @@
 
   /* ---------- state ---------- */
   let auth = null, db = null, ME = null, SPACE_ID = null, SPACE_DOC = null;
-  const STATE = { logs: [], items: [], notes: [], weights: [], plants: [], moods: [], ai: [], habits: [], files: [], financeTx: [] };
+  const STATE = { logs: [], items: [], notes: [], weights: [], plants: [], moods: [], ai: [], habits: [], listDefs: [], files: [], financeTx: [] };
   const PENDING = { logs: false, items: false, notes: false, financeTx: false };
   let unsub = [], ACTIVE_TAB = "habits", ACTIVE_SUB = "shopping", booting = false, weightChart = null, moodChart = null, financeCatChart = null, financeTrendChart = null, financeDailyBusy = false, plantPhotoData = "", plantAiBusy = false;
 
@@ -687,11 +697,10 @@
     el("docsClose").addEventListener("click", closeDocsModal);
     el("docsModal").addEventListener("click", (ev) => { if (ev.target === el("docsModal")) closeDocsModal(); });
     el("docInput").addEventListener("change", () => addFiles(el("docInput").files));
-    document.querySelectorAll(".sub-btn").forEach((b) => b.addEventListener("click", () => switchSub(b.dataset.sub)));
-    el("shopAdd").addEventListener("click", () => addFromInput("shopping", "shopInput"));
-    el("shopInput").addEventListener("keydown", (e) => { if (e.key === "Enter") addFromInput("shopping", "shopInput"); });
-    el("todoAdd").addEventListener("click", () => addFromInput("todo", "todoInput"));
-    el("todoInput").addEventListener("keydown", (e) => { if (e.key === "Enter") addFromInput("todo", "todoInput"); });
+    el("nestAdd").addEventListener("click", addFromInput);
+    el("nestInput").addEventListener("keydown", (e) => { if (e.key === "Enter") addFromInput(); });
+    el("listAdd").addEventListener("click", addNestList);
+    el("listLabel").addEventListener("keydown", (e) => { if (e.key === "Enter") addNestList(); });
     el("financeCsv").addEventListener("change", () => { ingestFinanceFiles(el("financeCsv").files); el("financeCsv").value = ""; });
     el("financeDedupe").addEventListener("click", dedupeFinanceExisting);
     el("financeAddManual").addEventListener("click", addManualFinanceTx);
@@ -798,6 +807,7 @@
     unsub.push(spaceRef().collection("moods").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.moods = await Promise.all(s.docs.map(decDoc)); renderMood(); }));
     unsub.push(spaceRef().collection("ai").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.ai = await Promise.all(s.docs.map(decDoc)); renderAI(); renderFinanceDailyNudge(); }));
     unsub.push(spaceRef().collection("habits").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.habits = await Promise.all(s.docs.map(decDoc)); if (STATE.habits.length === 0) seedDefaultHabits(); buildHabitGrid(); renderToday(); renderInsights(); renderHabitsSettings(); }));
+    unsub.push(spaceRef().collection("lists").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.listDefs = await Promise.all(s.docs.map(decDoc)); renderLists(); renderListSettings(); }));
     unsub.push(spaceRef().collection("files").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.files = await Promise.all(s.docs.map(decDoc)); renderDocs(); }));
     unsub.push(spaceRef().collection("financeTx").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.financeTx = await Promise.all(s.docs.map(decDoc)); PENDING.financeTx = s.metadata.hasPendingWrites; renderFinance(); refreshStatus(); }));
   }
@@ -858,10 +868,9 @@
     if (tab === "finance") renderFinance();
   }
   function switchSub(sub) {
-    ACTIVE_SUB = sub;
-    el("nestShopping").classList.toggle("hidden", sub !== "shopping");
-    el("nestTodo").classList.toggle("hidden", sub !== "todo");
-    document.querySelectorAll(".sub-btn").forEach((b) => { const on = b.dataset.sub === sub; b.classList.toggle("bg-accent", on); b.classList.toggle("text-white", on); b.classList.toggle("text-sub", !on); });
+    const keys = nestLists().map((l) => l.key);
+    ACTIVE_SUB = keys.includes(sub) ? sub : "shopping";
+    renderLists();
   }
   function renderQuote() { const box = el("dailyQuote"); if (box) box.textContent = QUOTES[dayOfYear() % QUOTES.length]; }
 
@@ -872,7 +881,7 @@
     el("meAvatar").innerHTML = avatarHtml("text-base");
     if (!el("wDate").value) el("wDate").value = todayStr();
     el("settingsMsg").textContent = "";
-    renderMembers(); renderHabitsSettings(); renderDocs(); el("settingsModal").classList.remove("hidden"); renderWeightChart();
+    renderMembers(); renderHabitsSettings(); renderListSettings(); renderDocs(); el("settingsModal").classList.remove("hidden"); renderWeightChart();
   }
   function closeSettings() { el("settingsModal").classList.add("hidden"); }
   function members() {
@@ -1139,18 +1148,67 @@ Base watering on typical indoor care. If the image is unclear, choose a conserva
     el("todayList").innerHTML = mine.map((l) => { const h = habitList().find((x) => x.label === l.habit); const emoji = h ? h.emoji : "•"; const time = new Date(l.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); const badge = l._pending ? `<span class="text-[#ff9f0a] text-[11px]">• saving</span>` : `<span class="text-accent text-[11px]">✓</span>`; return `<li class="flex items-center justify-between"><span class="flex items-center gap-2"><span>${emoji}</span><span>${escapeHtml(l.habit)}</span></span><span class="flex items-center gap-3 text-sub text-xs">${time} ${badge}</span></li>`; }).join("");
   }
 
-  /* ---------- Shopping / To-Do ---------- */
-  async function addFromInput(list, inputId) {
-    const input = el(inputId); const text = input.value.trim(); if (!text || !SPACE_ID || !KEY) return;
-    input.value = ""; showToast(`Added to ${list === "shopping" ? "shopping" : "to-do"}`);
-    try { await spaceRef().collection("items").add(await encPayload({ list, text, user: ME.name, ts: new Date().toISOString() })); } catch (e) { console.warn("add item failed", e); }
+  /* ---------- Nest lists ---------- */
+  function listKey(label) { return docId(String(label || "").toLowerCase().trim().replace(/\s+/g, "-")); }
+  function nestLists() {
+    const custom = STATE.listDefs.filter((l) => l.label && l.key).sort((a, b) => (a.order || 0) - (b.order || 0));
+    const defaults = DEFAULT_LISTS.map((l, i) => ({ ...l, order: i, isDefault: true }));
+    return [...defaults, ...custom.filter((l) => !defaults.some((d) => d.key === l.key))];
+  }
+  function activeListDef() { return nestLists().find((l) => l.key === ACTIVE_SUB) || nestLists()[0]; }
+  async function addNestList() {
+    if (!SPACE_ID || !KEY) return;
+    const emoji = (el("listEmoji").value.trim() || "✨").slice(0, 4);
+    const label = el("listLabel").value.trim();
+    if (!label) { showToast("Name the list"); return; }
+    const key = listKey(label);
+    if (nestLists().some((l) => l.key === key || l.label.toLowerCase() === label.toLowerCase())) { showToast("That list already exists"); return; }
+    el("listEmoji").value = ""; el("listLabel").value = "";
+    try { await putEnc("lists", key, { key, emoji, label, hint: `Shared ${label.toLowerCase()} list.`, order: Date.now() }, ME.uid); showToast(`Added ${emoji} ${label}`); }
+    catch (e) { console.warn("add list failed", e); }
+  }
+  function removeNestList(id) {
+    const list = STATE.listDefs.find((l) => l.id === id);
+    if (!list || !SPACE_ID) return;
+    const count = STATE.items.filter((x) => x.list === list.key).length;
+    const msg = count ? `Remove this list? Its ${count} saved item${count === 1 ? "" : "s"} will stay hidden unless you recreate the list.` : "Remove this list?";
+    if (!confirm(msg)) return;
+    spaceRef().collection("lists").doc(id).delete().catch((e) => console.warn(e));
+    if (ACTIVE_SUB === list.key) switchSub("shopping");
+  }
+  function renderListSettings() {
+    const ul = el("listCfgList"); if (!ul) return;
+    const lists = nestLists();
+    ul.innerHTML = lists.map((l) => `<li class="flex items-center gap-2 rounded-xl bg-appbg border border-line px-3 py-2"><span class="text-xl">${escapeHtml(l.emoji || "•")}</span><span class="flex-1 text-sm text-ink">${escapeHtml(l.label || "")}</span>${l.isDefault ? `<span class="text-[10px] text-sub">default</span>` : `<button data-dellist="${l.id}" class="text-sub text-xs px-2 py-1 rounded-lg hover:bg-white active:scale-95 transition">Remove</button>`}</li>`).join("");
+    ul.querySelectorAll("[data-dellist]").forEach((b) => b.addEventListener("click", () => removeNestList(b.dataset.dellist)));
+  }
+  async function addFromInput() {
+    const input = el("nestInput"); const text = input.value.trim(); const list = activeListDef();
+    if (!text || !SPACE_ID || !KEY || !list) return;
+    input.value = ""; showToast(`Added to ${list.label}`);
+    try { await spaceRef().collection("items").add(await encPayload({ list: list.key, text, user: ME.name, ts: new Date().toISOString() })); } catch (e) { console.warn("add item failed", e); }
   }
   function removeItem(id, liEl) { if (liEl) { liEl.style.opacity = "0.4"; liEl.style.transform = "translateX(8px)"; } if (SPACE_ID) spaceRef().collection("items").doc(id).delete().catch((e) => console.warn("remove failed", e)); }
-  function renderLists() { renderOneList("shopping", "shopList", "Nothing to buy — add an item above."); renderOneList("todo", "todoList2", "No tasks — add one above."); }
-  function renderOneList(list, ulId, emptyMsg) {
-    const ul = el(ulId); const items = STATE.items.filter((x) => x.list === list).sort((a, b) => (a.ts || "").localeCompare(b.ts || ""));
-    if (items.length === 0) { ul.innerHTML = `<li class="text-sub italic text-sm py-2">${emptyMsg}</li>`; return; }
-    ul.innerHTML = items.map((it) => { const who = it.user ? `<span class="text-[11px] text-sub">${escapeHtml(it.user)}</span>` : ""; const pend = it._pending ? `<span class="text-[11px] text-[#ff9f0a]">• saving</span>` : ""; return `<li class="flex items-center gap-3 rounded-xl bg-card border border-line card-shadow px-3 py-3"><button data-done="${it.id}" title="Mark done" class="done-btn h-6 w-6 shrink-0 rounded-full border-2 border-line hover:border-accent active:scale-90 transition grid place-items-center text-transparent hover:text-accent">✓</button><span class="flex-1 text-sm text-ink">${escapeHtml(it.text)}</span><span class="flex items-center gap-2">${who} ${pend}</span></li>`; }).join("");
+  function renderLists() {
+    const lists = nestLists(); if (!lists.length) return;
+    if (!lists.some((l) => l.key === ACTIVE_SUB)) ACTIVE_SUB = "shopping";
+    const active = activeListDef();
+    const tabs = el("nestListTabs");
+    if (tabs) {
+      tabs.innerHTML = lists.map((l) => {
+        const on = l.key === active.key, count = STATE.items.filter((x) => x.list === l.key).length;
+        return `<button data-sub="${l.key}" class="sub-btn shrink-0 rounded-full border px-3 py-2 text-sm font-medium active:scale-95 transition ${on ? "bg-accent text-white border-accent" : "bg-card text-sub border-line"}"><span>${escapeHtml(l.emoji || "•")}</span> ${escapeHtml(l.label)}${count ? ` <span class="opacity-75">${count}</span>` : ""}</button>`;
+      }).join("");
+      tabs.querySelectorAll("[data-sub]").forEach((b) => b.addEventListener("click", () => switchSub(b.dataset.sub)));
+    }
+    const items = STATE.items.filter((x) => x.list === active.key).sort((a, b) => (a.ts || "").localeCompare(b.ts || ""));
+    if (el("nestActiveTitle")) el("nestActiveTitle").textContent = `${active.emoji || ""} ${active.label}`.trim();
+    if (el("nestActiveHint")) el("nestActiveHint").textContent = active.hint || `Shared ${active.label.toLowerCase()} list.`;
+    if (el("nestActiveCount")) el("nestActiveCount").textContent = `${items.length} item${items.length === 1 ? "" : "s"}`;
+    if (el("nestInput")) el("nestInput").placeholder = active.key === "shopping" ? "Add an item..." : `Add to ${active.label.toLowerCase()}...`;
+    const ul = el("nestList"); if (!ul) return;
+    if (items.length === 0) { ul.innerHTML = `<li class="rounded-2xl bg-card border border-line card-shadow p-4 text-center text-sub text-sm">Nothing in ${escapeHtml(active.label.toLowerCase())} yet.</li>`; return; }
+    ul.innerHTML = items.map((it) => { const who = it.user ? `<span class="text-[11px] text-sub">${escapeHtml(it.user)}</span>` : ""; const pend = it._pending ? `<span class="text-[11px] text-[#ff9f0a]">• saving</span>` : ""; return `<li class="flex items-center gap-3 rounded-xl bg-card border border-line card-shadow px-3 py-3"><button data-done="${it.id}" title="Remove item" class="done-btn h-6 w-6 shrink-0 rounded-full border-2 border-line hover:border-accent active:scale-90 transition grid place-items-center text-transparent hover:text-accent">✓</button><span class="flex-1 text-sm text-ink">${escapeHtml(it.text)}</span><span class="flex items-center gap-2">${who} ${pend}</span></li>`; }).join("");
     ul.querySelectorAll(".done-btn").forEach((b) => b.addEventListener("click", () => removeItem(b.dataset.done, b.closest("li"))));
   }
 
