@@ -23,6 +23,7 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
   <!-- Firebase AI Logic (Gemini) — loaded as a module; exposes window.coupledAI() -->
   <script type="module">
@@ -67,6 +68,7 @@
     @keyframes pulse2 { 0%,100%{opacity:1} 50%{opacity:.4} }
     .pulse-dot { animation: pulse2 1.6s ease-in-out infinite; }
     .card-shadow { box-shadow: 0 1px 2px rgba(45,62,70,.05), 0 6px 20px rgba(45,62,70,.06); }
+    .finance-table th, .finance-table td { white-space: nowrap; }
   </style>
 </head>
 
@@ -224,6 +226,165 @@
         <ul id="plantList" class="space-y-3"></ul>
       </section>
 
+      <!-- FINANCE -->
+      <section id="tabFinance" class="tab-panel hidden">
+        <div class="rounded-2xl bg-card border border-line card-shadow p-4 mb-4">
+          <div class="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <h3 class="font-semibold text-[15px]">Wallet dashboard</h3>
+              <p id="financeRange" class="text-xs text-sub">No transactions yet.</p>
+            </div>
+            <div class="flex gap-2 shrink-0">
+              <button id="financeDedupe" class="rounded-full bg-white hover:bg-appbg border border-line text-sub text-xs font-semibold px-3 py-2 active:scale-95 transition">Dedup</button>
+              <label class="rounded-full bg-accent hover:bg-accentdark text-white text-xs font-semibold px-3 py-2 cursor-pointer active:scale-95 transition">Upload CSV<input id="financeCsv" type="file" accept=".csv,text/csv" multiple class="hidden" /></label>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 mb-3">
+            <select id="financeMonth" class="rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink focus:border-accent focus:outline-none"><option value="all">All months</option></select>
+            <select id="financeCurrency" class="rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink focus:border-accent focus:outline-none"><option value="all">All currencies</option></select>
+          </div>
+          <p id="financeUploadStatus" class="text-xs text-sub min-h-[18px]"></p>
+        </div>
+
+        <div id="financeEmpty" class="rounded-2xl bg-card border border-line card-shadow p-5 mb-4 text-center">
+          <div class="mx-auto h-12 w-12 rounded-2xl bg-accent/10 grid place-items-center text-2xl mb-3">💰</div>
+          <h3 class="font-bold text-lg">Build your Wallet picture</h3>
+          <p class="mt-2 text-sm text-sub leading-relaxed">Upload a bank statement or add your first entry manually. Once Wallet has a few transactions, Coupled can turn them into useful spending patterns.</p>
+          <div class="mt-4 grid gap-2 text-left">
+            <div class="rounded-xl bg-appbg border border-line px-3 py-2">
+              <div class="text-sm font-semibold text-ink">See where money goes</div>
+              <div class="text-xs text-sub">Category charts, monthly in-vs-out trends, and searchable history.</div>
+            </div>
+            <div class="rounded-xl bg-appbg border border-line px-3 py-2">
+              <div class="text-sm font-semibold text-ink">Catch duplicates automatically</div>
+              <div class="text-xs text-sub">Overlapping CSV uploads and repeat manual entries are skipped.</div>
+            </div>
+            <div class="rounded-xl bg-appbg border border-line px-3 py-2">
+              <div class="text-sm font-semibold text-ink">Unlock mindful AI nudges</div>
+              <div class="text-xs text-sub">Daily fun money quotes plus past expenses worth reviewing.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="finance-data rounded-2xl bg-accent/10 border border-accent/20 p-4 mb-4">
+          <div class="flex items-center justify-between gap-3 mb-2">
+            <div>
+              <div class="text-[11px] uppercase tracking-wide text-accent font-semibold">Today's money nudge</div>
+              <h3 class="font-semibold text-[15px]">Spend mindfully, save intentionally</h3>
+            </div>
+            <button id="financeDailyRefresh" class="rounded-full bg-white hover:bg-appbg border border-line text-accent text-xs font-semibold px-3 py-1.5 active:scale-95 transition">Refresh</button>
+          </div>
+          <p id="financeDailyQuote" class="text-sm text-ink italic leading-relaxed">Spend on what makes future-you high-five present-you.</p>
+          <div class="mt-3 rounded-xl bg-white/70 border border-line px-3 py-2">
+            <div class="text-[11px] text-sub font-semibold mb-1">Expense to review</div>
+            <p id="financeDailyWaste" class="text-sm text-ink leading-relaxed">Add transactions to get an automatic insight from past spending.</p>
+          </div>
+          <p id="financeDailyMeta" class="mt-2 text-[11px] text-sub"></p>
+        </div>
+
+        <div class="finance-data grid grid-cols-2 gap-3 mb-4">
+          <div class="rounded-2xl bg-card border border-line card-shadow p-3">
+            <div class="text-[11px] text-sub">In</div>
+            <div id="financeIn" class="text-lg font-bold text-accent">—</div>
+          </div>
+          <div class="rounded-2xl bg-card border border-line card-shadow p-3">
+            <div class="text-[11px] text-sub">Out</div>
+            <div id="financeOut" class="text-lg font-bold text-partnerB">—</div>
+          </div>
+          <div class="rounded-2xl bg-card border border-line card-shadow p-3">
+            <div class="text-[11px] text-sub">Net</div>
+            <div id="financeNet" class="text-lg font-bold">—</div>
+          </div>
+          <div class="rounded-2xl bg-card border border-line card-shadow p-3">
+            <div class="text-[11px] text-sub">Transactions</div>
+            <div id="financeCount" class="text-lg font-bold">—</div>
+          </div>
+        </div>
+
+        <div class="finance-data rounded-2xl bg-card border border-line card-shadow p-4 mb-4">
+          <div class="flex items-center justify-between gap-2 mb-3">
+            <label class="font-semibold text-[15px]">Monthly budget</label>
+            <input id="financeBudget" type="number" min="0" step="50" placeholder="2000" class="w-28 rounded-xl bg-white border border-line px-3 py-2 text-sm text-right text-ink focus:border-accent focus:outline-none" />
+          </div>
+          <div class="h-3 rounded-full bg-white border border-line overflow-hidden">
+            <div id="financeBudgetBar" class="h-full rounded-full bg-accent transition-all duration-500" style="width:0%"></div>
+          </div>
+          <div class="mt-2 flex items-center justify-between text-[11px] text-sub">
+            <span id="financeBudgetSpent">Spent 0</span>
+            <span id="financeBudgetPct">—</span>
+            <span id="financeBudgetLeft"></span>
+          </div>
+        </div>
+
+        <div class="rounded-2xl bg-card border border-line card-shadow p-4 mb-4 space-y-2">
+          <h3 class="font-semibold text-[15px]">Add manual entry</h3>
+          <div class="grid grid-cols-2 gap-2">
+            <input id="financeDate" type="date" class="rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink focus:border-accent focus:outline-none" />
+            <select id="financeDirection" class="rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink focus:border-accent focus:outline-none">
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+            </select>
+          </div>
+          <input id="financeDesc" type="text" maxlength="120" placeholder="Description" class="w-full rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+          <div class="grid grid-cols-2 gap-2">
+            <input id="financeAmount" type="number" step="0.01" inputmode="decimal" placeholder="Amount" class="rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:outline-none" />
+            <input id="financeManualCurrency" type="text" maxlength="6" placeholder="EUR" class="rounded-xl bg-white border border-line px-3 py-2.5 text-sm uppercase text-ink placeholder-sub focus:border-accent focus:outline-none" />
+          </div>
+          <input id="financeCategory" type="text" maxlength="40" placeholder="Category (optional)" class="w-full rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:outline-none" />
+          <button id="financeAddManual" class="w-full rounded-full bg-accent hover:bg-accentdark text-white font-semibold py-3 active:scale-95 transition">Add transaction</button>
+          <p id="financeManualMsg" class="text-[11px] text-sub text-center">Manual entries use the same duplicate check as CSV imports.</p>
+        </div>
+
+        <div class="finance-data grid gap-4 mb-4">
+          <div class="rounded-2xl bg-card border border-line card-shadow p-4">
+            <h3 class="font-semibold text-[15px] mb-2">Spending by category</h3>
+            <div class="rounded-xl bg-white border border-line p-2" style="height:220px"><canvas id="financeCatChart"></canvas></div>
+          </div>
+          <div class="rounded-2xl bg-card border border-line card-shadow p-4">
+            <h3 class="font-semibold text-[15px] mb-2">Monthly in vs out</h3>
+            <div class="rounded-xl bg-white border border-line p-2" style="height:220px"><canvas id="financeTrendChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="finance-data rounded-2xl bg-card border border-line card-shadow p-4 mb-4">
+          <div class="flex items-center justify-between gap-3 mb-2">
+            <div>
+              <h3 class="font-semibold text-[15px]">AI finance insight</h3>
+              <p class="text-[11px] text-sub">Uses the deduplicated encrypted transactions shown here.</p>
+            </div>
+            <button id="financeAiBtn" class="rounded-full bg-accent hover:bg-accentdark text-white text-xs font-semibold px-3 py-1.5 active:scale-95 transition">Generate</button>
+          </div>
+          <p id="financeAiOut" class="text-sm text-ink whitespace-pre-wrap leading-relaxed">Upload or add transactions, then generate a concise spending reflection.</p>
+        </div>
+
+        <div class="finance-data rounded-2xl bg-card border border-line card-shadow p-4 mb-4">
+          <h3 class="font-semibold text-[15px] mb-2">Stored batches</h3>
+          <ul id="financeBatchList" class="space-y-2"></ul>
+        </div>
+
+        <div class="finance-data rounded-2xl bg-card border border-line card-shadow p-4">
+          <div class="flex items-center justify-between gap-2 mb-3">
+            <h3 class="font-semibold text-[15px]">Transactions</h3>
+            <input id="financeSearch" type="search" placeholder="Search…" class="w-32 rounded-xl bg-white border border-line px-3 py-2 text-sm text-ink placeholder-sub focus:border-accent focus:outline-none" />
+          </div>
+          <div class="overflow-auto rounded-xl border border-line bg-white max-h-96">
+            <table class="finance-table w-full text-xs">
+              <thead class="bg-appbg text-sub sticky top-0">
+                <tr>
+                  <th class="text-left px-3 py-2">Date</th>
+                  <th class="text-left px-3 py-2">Description</th>
+                  <th class="text-left px-3 py-2">Category</th>
+                  <th class="text-right px-3 py-2">Amount</th>
+                  <th class="text-left px-3 py-2">Cur</th>
+                  <th class="px-3 py-2"></th>
+                </tr>
+              </thead>
+              <tbody id="financeTxBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <!-- VAULT -->
       <section id="tabVault" class="tab-panel hidden">
         <div id="vaultBanner" class="rounded-2xl border p-4 mb-4 text-center"></div>
@@ -245,10 +406,11 @@
 
   <!-- TAB BAR -->
   <nav id="tabBar" class="hidden fixed bottom-0 inset-x-0 z-30 border-t border-line bg-card/90 backdrop-blur">
-    <div class="mx-auto max-w-md grid grid-cols-4">
+    <div class="mx-auto max-w-md grid grid-cols-5">
       <button data-tab="habits" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">🏠</span><span class="text-[11px] font-medium">Home</span></button>
       <button data-tab="nest" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">🪺</span><span class="text-[11px] font-medium">Nest</span></button>
       <button data-tab="plants" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">🪴</span><span class="text-[11px] font-medium">Plants</span></button>
+      <button data-tab="finance" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">💰</span><span class="text-[11px] font-medium">Wallet</span></button>
       <button data-tab="vault" class="tab-btn flex flex-col items-center gap-1 py-3 text-sub"><span class="text-xl">🔒</span><span class="text-[11px] font-medium">Vault</span></button>
     </div>
   </nav>
@@ -458,14 +620,14 @@
   async function decDoc(d) {
     const data = d.data() || {}; let content = {};
     try { content = JSON.parse(await decStr(data.enc)); } catch (e) { content = { _undecryptable: true }; }
-    return { id: d.id, uid: data.uid, _pending: d.metadata.hasPendingWrites, ...content };
+    return { ...content, id: d.id, uid: data.uid, _pending: d.metadata.hasPendingWrites };
   }
 
   /* ---------- state ---------- */
   let auth = null, db = null, ME = null, SPACE_ID = null, SPACE_DOC = null;
-  const STATE = { logs: [], items: [], notes: [], weights: [], plants: [], moods: [], ai: [], habits: [], files: [] };
-  const PENDING = { logs: false, items: false, notes: false };
-  let unsub = [], ACTIVE_TAB = "habits", ACTIVE_SUB = "shopping", booting = false, weightChart = null, moodChart = null;
+  const STATE = { logs: [], items: [], notes: [], weights: [], plants: [], moods: [], ai: [], habits: [], files: [], financeTx: [] };
+  const PENDING = { logs: false, items: false, notes: false, financeTx: false };
+  let unsub = [], ACTIVE_TAB = "habits", ACTIVE_SUB = "shopping", booting = false, weightChart = null, moodChart = null, financeCatChart = null, financeTrendChart = null, financeDailyBusy = false;
 
   function init() {
     buildHabitGrid(); wireUi();
@@ -514,6 +676,15 @@
     el("shopInput").addEventListener("keydown", (e) => { if (e.key === "Enter") addFromInput("shopping", "shopInput"); });
     el("todoAdd").addEventListener("click", () => addFromInput("todo", "todoInput"));
     el("todoInput").addEventListener("keydown", (e) => { if (e.key === "Enter") addFromInput("todo", "todoInput"); });
+    el("financeCsv").addEventListener("change", () => { ingestFinanceFiles(el("financeCsv").files); el("financeCsv").value = ""; });
+    el("financeDedupe").addEventListener("click", dedupeFinanceExisting);
+    el("financeAddManual").addEventListener("click", addManualFinanceTx);
+    ["financeDesc","financeAmount","financeCategory"].forEach((id) => el(id).addEventListener("keydown", (e) => { if (e.key === "Enter") addManualFinanceTx(); }));
+    ["financeMonth","financeCurrency"].forEach((id) => el(id).addEventListener("change", renderFinance));
+    el("financeSearch").addEventListener("input", renderFinance);
+    el("financeBudget").addEventListener("input", () => { localStorage.setItem("coupled_finance_budget", el("financeBudget").value); renderFinance(); });
+    el("financeAiBtn").addEventListener("click", generateFinanceInsight);
+    el("financeDailyRefresh").addEventListener("click", () => ensureFinanceDailyNudge(true));
     setInterval(() => { if (ACTIVE_TAB === "vault") renderVault(); if (ACTIVE_TAB === "plants") renderPlants(); }, 60000);
   }
 
@@ -609,9 +780,10 @@
     unsub.push(spaceRef().collection("weights").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.weights = await Promise.all(s.docs.map(decDoc)); if (!el("settingsModal").classList.contains("hidden")) renderWeightChart(); }));
     unsub.push(spaceRef().collection("plants").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.plants = await Promise.all(s.docs.map(decDoc)); renderPlants(); }));
     unsub.push(spaceRef().collection("moods").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.moods = await Promise.all(s.docs.map(decDoc)); renderMood(); }));
-    unsub.push(spaceRef().collection("ai").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.ai = await Promise.all(s.docs.map(decDoc)); renderAI(); }));
+    unsub.push(spaceRef().collection("ai").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.ai = await Promise.all(s.docs.map(decDoc)); renderAI(); renderFinanceDailyNudge(); }));
     unsub.push(spaceRef().collection("habits").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.habits = await Promise.all(s.docs.map(decDoc)); if (STATE.habits.length === 0) seedDefaultHabits(); buildHabitGrid(); renderToday(); renderInsights(); renderHabitsSettings(); }));
     unsub.push(spaceRef().collection("files").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.files = await Promise.all(s.docs.map(decDoc)); renderDocs(); }));
+    unsub.push(spaceRef().collection("financeTx").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.financeTx = await Promise.all(s.docs.map(decDoc)); PENDING.financeTx = s.metadata.hasPendingWrites; renderFinance(); refreshStatus(); }));
   }
   function teardownListeners() { unsub.forEach((u) => { try { u(); } catch (e) {} }); unsub = []; }
 
@@ -653,18 +825,21 @@
     el("authView").classList.add("hidden"); el("authView").classList.remove("flex");
     el("keyView").classList.add("hidden"); el("keyView").classList.remove("flex");
     el("appView").classList.remove("hidden"); el("profileBtn").classList.remove("hidden"); el("tabBar").classList.remove("hidden");
+    el("financeBudget").value = localStorage.getItem("coupled_finance_budget") || "";
+    el("financeDate").value = todayStr();
     switchTab(ACTIVE_TAB);
-    renderQuote(); renderToday(); renderLists(); renderVault(); renderPlants(); renderMood(); renderAI(); renderDocs(); renderInsights(); refreshStatus();
+    renderQuote(); renderToday(); renderLists(); renderVault(); renderPlants(); renderMood(); renderAI(); renderDocs(); renderInsights(); renderFinance(); refreshStatus();
   }
   function switchTab(tab) {
     ACTIVE_TAB = tab;
-    const map = { habits:"tabHabits", nest:"tabNest", plants:"tabPlants", vault:"tabVault" };
+    const map = { habits:"tabHabits", nest:"tabNest", plants:"tabPlants", finance:"tabFinance", vault:"tabVault" };
     Object.entries(map).forEach(([k, id]) => el(id).classList.toggle("hidden", k !== tab));
     document.querySelectorAll(".tab-btn").forEach((b) => { const on = b.dataset.tab === tab; b.classList.toggle("text-accent", on); b.classList.toggle("text-sub", !on); });
     if (tab === "vault") renderVault();
     if (tab === "plants") renderPlants();
     if (tab === "habits") renderMood();
     if (tab === "nest") switchSub(ACTIVE_SUB);
+    if (tab === "finance") renderFinance();
   }
   function switchSub(sub) {
     ACTIVE_SUB = sub;
@@ -958,6 +1133,338 @@ Plants overdue: ${overdue}`;
     box.innerHTML = chips.length ? chips.join("") : `<span class="text-xs text-sub italic px-1">No activity yet this week — log something to see insights.</span>`;
   }
 
+  /* ---------- Finance ---------- */
+  const FINANCE_CATMAP = [
+    ["salary", "Income"], ["revolut", "Transfers"], ["transfer", "Transfers"], ["top-up", "Transfers"], ["topup", "Transfers"],
+    ["tesco", "Groceries"], ["lidl", "Groceries"], ["aldi", "Groceries"], ["sainsbury", "Groceries"], ["grocery", "Groceries"],
+    ["uber", "Transport"], ["bolt", "Transport"], ["tfl", "Transport"], ["train", "Transport"], ["fuel", "Transport"], ["shell", "Transport"],
+    ["amazon", "Shopping"], ["zara", "Shopping"], ["asos", "Shopping"], ["ikea", "Shopping"],
+    ["netflix", "Subscriptions"], ["spotify", "Subscriptions"], ["youtube", "Subscriptions"], ["apple", "Subscriptions"], ["google", "Subscriptions"],
+    ["restaurant", "Eating Out"], ["mcdonald", "Eating Out"], ["kfc", "Eating Out"], ["starbucks", "Eating Out"], ["coffee", "Eating Out"], ["deliveroo", "Eating Out"], ["just eat", "Eating Out"],
+    ["rent", "Housing"], ["mortgage", "Housing"], ["council", "Housing"],
+    ["gym", "Health"], ["pharmacy", "Health"], ["boots", "Health"],
+    ["easyjet", "Travel"], ["ryanair", "Travel"], ["booking", "Travel"], ["airbnb", "Travel"], ["hotel", "Travel"],
+    ["electric", "Utilities"], ["water", "Utilities"], ["vodafone", "Utilities"], ["o2", "Utilities"], ["ee", "Utilities"], ["internet", "Utilities"],
+    ["atm", "Cash"], ["withdrawal", "Cash"],
+  ];
+  const FINANCE_COLORS = ["#00897b", "#ff7043", "#f6b44b", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6", "#84cc16", "#64748b", "#f97316"];
+  function moneyFmt(n, cur) {
+    const abs = Math.abs(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return `${n < 0 ? "-" : ""}${abs}${cur && cur !== "all" ? " " + cur : ""}`;
+  }
+  function financeHash(str) {
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) h = ((h << 5) + h) ^ str.charCodeAt(i);
+    return "tx_" + (h >>> 0).toString(36) + "_" + str.length.toString(36);
+  }
+  function financeCategory(desc) {
+    const d = (desc || "").toLowerCase();
+    for (const [kw, cat] of FINANCE_CATMAP) {
+      const k = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      if (new RegExp("(^|[^a-z0-9])" + k + "([^a-z0-9]|$)", "i").test(d)) return cat;
+    }
+    return "Uncategorised";
+  }
+  function financeGet(row, ...keys) {
+    for (const k of keys) {
+      const hit = Object.keys(row).find((h) => h.trim().toLowerCase() === k.toLowerCase());
+      if (hit !== undefined) return row[hit];
+    }
+    return undefined;
+  }
+  function financeMonthFrom(s) {
+    const m = String(s || "").match(/^\d{4}-\d{2}/);
+    if (m) return m[0];
+    const d = new Date(s);
+    return isNaN(d) ? "unknown" : d.toISOString().slice(0, 7);
+  }
+  function financeTxId(date, desc, amount) {
+    return financeHash([String(date || "").trim(), String(desc || "").trim(), Number(amount).toFixed(2)].join("|"));
+  }
+  function normalizeFinanceRow(row, batchId, batchName) {
+    const date = String(financeGet(row, "Started Date", "Date started", "Date", "Completed Date") || "").trim();
+    const desc = String(financeGet(row, "Description", "Reference", "Type") || "").trim();
+    let raw = financeGet(row, "Amount", "Paid Out", "Money Out");
+    if (raw === undefined || raw === "") raw = financeGet(row, "Paid In", "Money In");
+    const amount = parseFloat(String(raw).replace(/[, ]/g, ""));
+    if (!date || !desc || isNaN(amount)) return null;
+    const fee = parseFloat(String(financeGet(row, "Fee") || "0").replace(/[, ]/g, "")) || 0;
+    const currency = String(financeGet(row, "Currency") || "EUR").trim().toUpperCase();
+    return {
+      date, desc, amount, fee, currency,
+      state: String(financeGet(row, "State") || "COMPLETED").trim(),
+      type: String(financeGet(row, "Type") || "").trim(),
+      category: financeCategory(desc),
+      month: financeMonthFrom(date),
+      batchId, batchName,
+      source: "csv",
+      at: new Date().toISOString(),
+    };
+  }
+  async function putFinanceTx(tx) {
+    const id = tx.id || financeTxId(tx.date, tx.desc, tx.amount);
+    await putEnc("financeTx", id, tx, ME.uid);
+    return id;
+  }
+  async function ingestFinanceFiles(fileList) {
+    if (!SPACE_ID || !KEY) return;
+    const files = [...fileList]; if (!files.length) return;
+    const status = el("financeUploadStatus");
+    if (typeof Papa === "undefined") { status.textContent = "CSV parser is still loading. Try again in a moment."; return; }
+    status.textContent = `Reading ${files.length} file${files.length === 1 ? "" : "s"}...`;
+    let parsedCount = 0, added = 0, dup = 0;
+    const existing = new Set(STATE.financeTx.map((t) => t.id));
+    const seen = new Set();
+    try {
+      for (const file of files) {
+        const batchId = "batch-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7);
+        const parsed = Papa.parse(await file.text(), { header: true, skipEmptyLines: true });
+        const rows = parsed.data.map((r) => normalizeFinanceRow(r, batchId, file.name)).filter(Boolean);
+        parsedCount += rows.length;
+        for (const row of rows) {
+          const id = financeTxId(row.date, row.desc, row.amount);
+          if (existing.has(id) || seen.has(id)) { dup++; continue; }
+          seen.add(id);
+          await putFinanceTx({ ...row, id });
+          added++;
+        }
+      }
+      status.textContent = parsedCount ? `Parsed ${parsedCount} · added ${added} · skipped ${dup} duplicates.` : "No valid rows found. Revolut CSVs need Started Date, Description, Amount, and Currency.";
+      showToast(`Imported ${added} transaction${added === 1 ? "" : "s"}`);
+    } catch (e) {
+      status.textContent = "Upload failed: " + (e && e.message ? e.message : e);
+      console.warn("finance upload failed", e);
+    }
+  }
+  async function addManualFinanceTx() {
+    if (!SPACE_ID || !KEY) return;
+    const date = el("financeDate").value || todayStr();
+    const desc = el("financeDesc").value.trim();
+    const raw = parseFloat(el("financeAmount").value);
+    const currency = (el("financeManualCurrency").value.trim() || "EUR").toUpperCase();
+    const category = el("financeCategory").value.trim();
+    const msg = el("financeManualMsg");
+    if (!desc || !raw || raw <= 0) { msg.className = "text-[11px] text-[#c00] text-center"; msg.textContent = "Add a description and a positive amount."; return; }
+    const amount = el("financeDirection").value === "income" ? raw : -raw;
+    const id = financeTxId(date, desc, amount);
+    if (STATE.financeTx.some((t) => t.id === id)) { msg.className = "text-[11px] text-sub text-center"; msg.textContent = "Skipped duplicate transaction."; showToast("Duplicate skipped"); return; }
+    const tx = { id, date, desc, amount, fee: 0, currency, category: category || financeCategory(desc), month: financeMonthFrom(date), batchId: "manual-" + financeMonthFrom(date), batchName: "Manual entries", source: "manual", at: new Date().toISOString() };
+    try {
+      await putFinanceTx(tx);
+      ["financeDesc","financeAmount","financeCategory"].forEach((id) => (el(id).value = ""));
+      el("financeDate").value = todayStr();
+      msg.className = "text-[11px] text-sub text-center"; msg.textContent = "Manual entries use the same duplicate check as CSV imports.";
+      showToast("Transaction added");
+    } catch (e) {
+      msg.className = "text-[11px] text-[#c00] text-center"; msg.textContent = "Save failed: " + (e && e.message ? e.message : e);
+    }
+  }
+  async function dedupeFinanceExisting() {
+    if (!SPACE_ID || !KEY) return;
+    const seen = new Set(), remove = [];
+    STATE.financeTx.slice().sort((a, b) => (a.at || "").localeCompare(b.at || "")).forEach((t) => {
+      const sig = financeTxId(t.date, t.desc, t.amount);
+      if (seen.has(sig)) remove.push(t);
+      else seen.add(sig);
+    });
+    if (!remove.length) { el("financeUploadStatus").textContent = "No duplicate transactions found."; showToast("No duplicates found"); return; }
+    if (!confirm(`Remove ${remove.length} duplicate transaction${remove.length === 1 ? "" : "s"}?`)) return;
+    try {
+      await Promise.all(remove.map((t) => spaceRef().collection("financeTx").doc(t.id).delete()));
+      el("financeUploadStatus").textContent = `Removed ${remove.length} duplicate transaction${remove.length === 1 ? "" : "s"}.`;
+      showToast("Duplicates removed");
+    } catch (e) {
+      el("financeUploadStatus").textContent = "Deduplicate failed: " + (e && e.message ? e.message : e);
+      console.warn("finance dedupe failed", e);
+    }
+  }
+  function financeRows() {
+    const m = el("financeMonth").value, c = el("financeCurrency").value, q = (el("financeSearch").value || "").toLowerCase();
+    return STATE.financeTx.filter((t) => !t._undecryptable && (m === "all" || t.month === m) && (c === "all" || t.currency === c) && (!q || (t.desc || "").toLowerCase().includes(q) || (t.category || "").toLowerCase().includes(q)));
+  }
+  function rebuildFinanceFilters() {
+    const months = [...new Set(STATE.financeTx.map((t) => t.month).filter((m) => m && m !== "unknown"))].sort().reverse();
+    const currencies = [...new Set(STATE.financeTx.map((t) => t.currency).filter(Boolean))].sort();
+    const monthEl = el("financeMonth"), curEl = el("financeCurrency");
+    const mv = monthEl.value, cv = curEl.value;
+    monthEl.innerHTML = `<option value="all">All months</option>` + months.map((m) => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
+    curEl.innerHTML = `<option value="all">All currencies</option>` + currencies.map((c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+    if ([...monthEl.options].some((o) => o.value === mv)) monthEl.value = mv;
+    if ([...curEl.options].some((o) => o.value === cv)) curEl.value = cv;
+  }
+  function renderFinance() {
+    if (!el("tabFinance")) return;
+    rebuildFinanceFilters();
+    const hasData = STATE.financeTx.some((t) => !t._undecryptable);
+    el("financeEmpty").classList.toggle("hidden", hasData);
+    document.querySelectorAll(".finance-data").forEach((x) => x.classList.toggle("hidden", !hasData));
+    const rows = financeRows();
+    const selectedCur = el("financeCurrency").value;
+    const inSum = rows.filter((r) => r.amount > 0).reduce((a, b) => a + b.amount, 0);
+    const outSum = rows.filter((r) => r.amount < 0).reduce((a, b) => a + Math.abs(b.amount), 0);
+    const net = inSum - outSum;
+    el("financeIn").textContent = moneyFmt(inSum, selectedCur);
+    el("financeOut").textContent = moneyFmt(outSum, selectedCur);
+    el("financeNet").textContent = moneyFmt(net, selectedCur);
+    el("financeNet").className = "text-lg font-bold " + (net >= 0 ? "text-accent" : "text-partnerB");
+    el("financeCount").textContent = `${rows.length}/${STATE.financeTx.length}`;
+    const months = [...new Set(STATE.financeTx.map((t) => t.month).filter((m) => m && m !== "unknown"))].sort();
+    el("financeRange").textContent = STATE.financeTx.length ? `${STATE.financeTx.length} stored · ${months[0] || "?"} to ${months[months.length - 1] || "?"}` : "No transactions yet.";
+    renderFinanceBudget(outSum);
+    renderFinanceCharts(rows);
+    renderFinanceTable(rows);
+    renderFinanceBatches();
+    renderFinanceDailyNudge();
+    if (hasData && ACTIVE_TAB === "finance") ensureFinanceDailyNudge(false);
+  }
+  function renderFinanceBudget(outSum) {
+    const budget = parseFloat(el("financeBudget").value) || 0;
+    const months = [...new Set(STATE.financeTx.map((t) => t.month).filter((m) => m && m !== "unknown"))];
+    const effective = el("financeMonth").value === "all" && months.length > 1 ? budget * months.length : budget;
+    const pct = effective > 0 ? (outSum / effective) * 100 : 0;
+    el("financeBudgetBar").style.width = Math.min(100, pct) + "%";
+    el("financeBudgetBar").className = "h-full rounded-full transition-all duration-500 " + (pct > 100 ? "bg-partnerB" : pct > 80 ? "bg-[#f6b44b]" : "bg-accent");
+    el("financeBudgetSpent").textContent = "Spent " + moneyFmt(outSum, el("financeCurrency").value);
+    el("financeBudgetPct").textContent = effective > 0 ? Math.round(pct) + "%" : "Set a budget";
+    el("financeBudgetLeft").textContent = effective > 0 ? "Left " + moneyFmt(effective - outSum, el("financeCurrency").value) : "";
+  }
+  function renderFinanceCharts(rows) {
+    if (financeCatChart) financeCatChart.destroy();
+    if (financeTrendChart) financeTrendChart.destroy();
+    if (typeof Chart === "undefined") return;
+    const byCat = {};
+    rows.filter((r) => r.amount < 0).forEach((r) => { byCat[r.category || "Uncategorised"] = (byCat[r.category || "Uncategorised"] || 0) + Math.abs(r.amount); });
+    const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+    financeCatChart = new Chart(el("financeCatChart").getContext("2d"), { type: "doughnut", data: { labels: cats.map((x) => x[0]), datasets: [{ data: cats.map((x) => x[1]), backgroundColor: FINANCE_COLORS, borderColor: "#fbf7ef", borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: "62%", plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { family: "Quicksand", size: 11 } } } } } });
+    const byMonth = {};
+    rows.forEach((r) => { const m = r.month || "unknown"; byMonth[m] = byMonth[m] || { in: 0, out: 0 }; if (r.amount > 0) byMonth[m].in += r.amount; else byMonth[m].out += Math.abs(r.amount); });
+    const ms = Object.keys(byMonth).filter((m) => m !== "unknown").sort();
+    financeTrendChart = new Chart(el("financeTrendChart").getContext("2d"), { type: "bar", data: { labels: ms, datasets: [{ label: "In", data: ms.map((m) => byMonth[m].in), backgroundColor: "#00897b" }, { label: "Out", data: ms.map((m) => byMonth[m].out), backgroundColor: "#ff7043" }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { family: "Quicksand" } } } }, scales: { x: { grid: { display: false } }, y: { grid: { color: "#eadfce" } } } } });
+  }
+  function renderFinanceTable(rows) {
+    const body = el("financeTxBody");
+    const sorted = rows.slice().sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 300);
+    body.innerHTML = sorted.map((r) => `<tr class="border-t border-line"><td class="px-3 py-2 text-sub">${escapeHtml((r.date || "").slice(0, 16))}</td><td class="px-3 py-2 max-w-[170px] truncate" title="${escapeHtml(r.desc)}">${escapeHtml(r.desc || "—")}</td><td class="px-3 py-2"><span class="rounded-full bg-appbg border border-line px-2 py-0.5">${escapeHtml(r.category || "Uncategorised")}</span></td><td class="px-3 py-2 text-right font-semibold ${r.amount < 0 ? "text-partnerB" : "text-accent"}">${moneyFmt(r.amount)}</td><td class="px-3 py-2 text-sub">${escapeHtml(r.currency || "")}</td><td class="px-3 py-2 text-right"><button data-delftx="${r.id}" class="text-sub hover:text-partnerB">✕</button></td></tr>`).join("") || `<tr><td colspan="6" class="px-3 py-6 text-center text-sub">No transactions match.</td></tr>`;
+    body.querySelectorAll("[data-delftx]").forEach((b) => b.addEventListener("click", () => deleteFinanceTx(b.dataset.delftx)));
+  }
+  function renderFinanceBatches() {
+    const batches = {};
+    STATE.financeTx.forEach((t) => {
+      const id = t.batchId || "manual";
+      batches[id] = batches[id] || { id, name: t.batchName || "Manual entries", count: 0, min: t.month || "unknown", max: t.month || "unknown" };
+      batches[id].count++;
+      if ((t.month || "") < batches[id].min) batches[id].min = t.month || "unknown";
+      if ((t.month || "") > batches[id].max) batches[id].max = t.month || "unknown";
+    });
+    const list = Object.values(batches).sort((a, b) => b.id.localeCompare(a.id));
+    el("financeBatchList").innerHTML = list.length ? list.map((b) => `<li class="flex items-center gap-2 rounded-xl bg-appbg border border-line px-3 py-2"><span class="min-w-0 flex-1"><span class="block text-sm font-medium truncate">${escapeHtml(b.name)}</span><span class="block text-[11px] text-sub">${b.count} tx · ${escapeHtml(b.min === b.max ? b.min : b.min + " to " + b.max)}</span></span><button data-delfbatch="${b.id}" class="text-sub text-xs px-2 py-1">Remove</button></li>`).join("") : `<li class="text-sub italic text-sm py-2">No batches stored.</li>`;
+    el("financeBatchList").querySelectorAll("[data-delfbatch]").forEach((b) => b.addEventListener("click", () => deleteFinanceBatch(b.dataset.delfbatch)));
+  }
+  async function deleteFinanceTx(id) {
+    if (!SPACE_ID || !id) return;
+    try { await spaceRef().collection("financeTx").doc(id).delete(); showToast("Transaction removed"); } catch (e) { console.warn("delete finance tx failed", e); }
+  }
+  async function deleteFinanceBatch(batchId) {
+    const rows = STATE.financeTx.filter((t) => t.batchId === batchId);
+    if (!rows.length || !confirm(`Remove ${rows.length} transaction${rows.length === 1 ? "" : "s"} from this batch?`)) return;
+    try { await Promise.all(rows.map((t) => spaceRef().collection("financeTx").doc(t.id).delete())); showToast("Batch removed"); } catch (e) { console.warn("delete finance batch failed", e); }
+  }
+  function buildFinanceSummary(rows) {
+    if (!rows.length) return "";
+    const inSum = rows.filter((r) => r.amount > 0).reduce((a, b) => a + b.amount, 0);
+    const outSum = rows.filter((r) => r.amount < 0).reduce((a, b) => a + Math.abs(b.amount), 0);
+    const byCat = {};
+    const merchants = {};
+    rows.filter((r) => r.amount < 0).forEach((r) => {
+      byCat[r.category || "Uncategorised"] = (byCat[r.category || "Uncategorised"] || 0) + Math.abs(r.amount);
+      const k = r.desc || "unknown";
+      merchants[k] = merchants[k] || { total: 0, count: 0, months: new Set(), amounts: [] };
+      merchants[k].total += Math.abs(r.amount); merchants[k].count++; merchants[k].months.add(r.month); merchants[k].amounts.push(Math.abs(r.amount));
+    });
+    const recurring = Object.entries(merchants).filter(([, m]) => m.months.size >= 2).map(([name, m]) => ({ name, avg: m.total / m.count, total: m.total, months: m.months.size, spread: Math.max(...m.amounts) - Math.min(...m.amounts) })).filter((m) => m.spread <= Math.max(2, m.avg * 0.15)).sort((a, b) => b.total - a.total).slice(0, 8);
+    return [
+      `Transactions: ${rows.length}`,
+      `Currency filter: ${el("financeCurrency").value}`,
+      `Total in: ${inSum.toFixed(2)}; total out: ${outSum.toFixed(2)}; net: ${(inSum - outSum).toFixed(2)}`,
+      "Spend by category:",
+      ...Object.entries(byCat).sort((a, b) => b[1] - a[1]).map(([c, v]) => `- ${c}: ${v.toFixed(2)} (${((v / outSum) * 100 || 0).toFixed(1)}%)`),
+      "Likely recurring charges:",
+      ...(recurring.length ? recurring.map((r) => `- ${r.name}: about ${r.avg.toFixed(2)} across ${r.months} months`) : ["- none detected"]),
+    ].join("\n");
+  }
+  function financeDailyDocId(date = todayStr()) { return "financeDaily-" + date; }
+  function financeDailyDoc(date = todayStr()) { return STATE.ai.find((x) => x.id === financeDailyDocId(date)); }
+  function renderFinanceDailyNudge() {
+    const quote = el("financeDailyQuote"), waste = el("financeDailyWaste"), meta = el("financeDailyMeta");
+    if (!quote || !waste) return;
+    const doc = financeDailyDoc();
+    if (doc && (doc.quote || doc.waste)) {
+      quote.textContent = doc.quote || "Spend on what supports the life you are building; pause on what only fills the moment.";
+      waste.textContent = doc.waste || "No specific past expense stood out today.";
+      if (meta) meta.textContent = `Generated ${new Date(doc.at || Date.now()).toLocaleDateString([], { month: "short", day: "numeric" })}${doc.by ? " · by " + doc.by : ""}`;
+      return;
+    }
+    quote.textContent = financeDailyBusy ? "Cooking up today's money nudge..." : "Spend on what makes future-you high-five present-you.";
+    waste.textContent = STATE.financeTx.length ? "Looking for a useful past expense to review..." : "Add transactions to get an automatic insight from past spending.";
+    if (meta) meta.textContent = STATE.financeTx.length ? "" : "The nudge works best after you import or add a few transactions.";
+  }
+  function parseFinanceDailyText(text) {
+    const out = { quote: "", waste: "" };
+    String(text || "").split("\n").forEach((line) => {
+      const clean = line.replace(/^[-*\s]+/, "").trim();
+      const q = clean.match(/^quote\s*:\s*(.+)$/i);
+      const w = clean.match(/^(expense|review)\s*:\s*(.+)$/i);
+      if (q) out.quote = q[1].trim().replace(/^["“]|["”]$/g, "");
+      if (w) out.waste = w[2].trim();
+    });
+    if (!out.quote) out.quote = String(text || "").split("\n").find(Boolean) || "";
+    if (!out.waste) out.waste = "No specific past expense stood out today.";
+    return out;
+  }
+  async function ensureFinanceDailyNudge(force) {
+    if (!SPACE_ID || !KEY || financeDailyBusy) return;
+    const date = todayStr();
+    if (!force && financeDailyDoc(date)) return;
+    if (!window.coupledAI) { renderFinanceDailyNudge(); return; }
+    financeDailyBusy = true; renderFinanceDailyNudge();
+    try {
+      const rows = STATE.financeTx.filter((t) => !t._undecryptable);
+      const summary = rows.length ? buildFinanceSummary(rows) : "No transactions imported yet.";
+      const prompt = `Create today's personal finance nudge for one person. Return exactly two lines:
+Quote: one fun, meaningful, original sentence about spending mindfully, spending on what truly matters, and saving more for a better future. It should feel playful, clever, and memorable without being cheesy.
+Expense: one concrete unnecessary or low-value past expense to review from the data below. If there is no transaction data, give a general starter suggestion without pretending there was data.
+
+Rules: be practical, kind, specific, and under 55 words total. Do not mention that you are an AI. Avoid generic motivational slogans.
+
+DATA:
+${summary}`;
+      const parsed = parseFinanceDailyText(await window.coupledAI(prompt));
+      await putEnc("ai", financeDailyDocId(date), { quote: parsed.quote, waste: parsed.waste, at: new Date().toISOString(), by: ME.name }, ME.uid);
+    } catch (e) {
+      const quote = el("financeDailyQuote"), waste = el("financeDailyWaste"), meta = el("financeDailyMeta");
+      if (quote) quote.textContent = "Spend on what makes future-you high-five present-you.";
+      if (waste) waste.textContent = "Couldn't generate today's expense review yet.";
+      if (meta) meta.textContent = "AI nudge failed: " + (e && e.message ? e.message : e);
+    }
+    financeDailyBusy = false; renderFinanceDailyNudge();
+  }
+  async function generateFinanceInsight() {
+    const out = el("financeAiOut"), btn = el("financeAiBtn");
+    const rows = financeRows();
+    if (!rows.length) { showToast("No finance data yet"); return; }
+    if (!window.coupledAI) { out.textContent = window.coupledAIError || "AI is still loading — try again in a moment."; return; }
+    btn.disabled = true; btn.textContent = "Thinking...";
+    try {
+      const prompt = `You are a practical personal finance coach. Analyse this deduplicated transaction summary and respond in under 350 words with: Snapshot, biggest spending drivers, likely recurring charges, and 3 concrete next moves. Use only the data provided and do not invent exact savings.
+
+${buildFinanceSummary(rows)}`;
+      out.textContent = (await window.coupledAI(prompt)).trim();
+    } catch (e) {
+      out.textContent = "Couldn't generate right now: " + (e && e.message ? e.message : e);
+    }
+    btn.disabled = false; btn.textContent = "Generate";
+  }
+
   /* ---------- Status + toast ---------- */
   /* ---------- Documents (encrypted, chunked in Firestore) ---------- */
   const DOC_CHUNK = 600000;
@@ -1063,7 +1570,7 @@ Plants overdue: ${overdue}`;
     if (/iphone|ipad|ipod/i.test(navigator.userAgent)) document.querySelectorAll(".ios-hint").forEach((h) => h.classList.remove("hidden"));
   }
 
-  function anyPending() { return PENDING.logs || PENDING.items || PENDING.notes; }
+  function anyPending() { return PENDING.logs || PENDING.items || PENDING.notes || PENDING.financeTx; }
   function refreshStatus() { const dot = el("statusDot"), txt = el("statusText"); let dotc, label; if (!navigator.onLine) { dotc = "bg-[#ff9f0a]"; label = "Offline"; } else if (anyPending()) { dotc = "bg-accent"; label = "Saving…"; } else { dotc = "bg-accent"; label = "Synced"; } dot.className = `h-2 w-2 rounded-full pulse-dot ${dotc}`; txt.textContent = label; }
   let toastTimer;
   function showToast(msg) { const toast = el("toast"); toast.textContent = msg; toast.style.opacity = "1"; clearTimeout(toastTimer); toastTimer = setTimeout(() => (toast.style.opacity = "0"), 1600); }
