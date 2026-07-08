@@ -218,15 +218,25 @@
 
       <!-- PLANTS -->
       <section id="tabPlants" class="tab-panel hidden">
-        <div class="rounded-2xl bg-card border border-line card-shadow p-4 mb-4 space-y-2">
-          <input id="pName" type="text" placeholder="Plant name (e.g. Monstera)" class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
-          <textarea id="pNotes" rows="2" maxlength="500" placeholder="Notes — care tips, spot, type…" class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none resize-none"></textarea>
-          <div class="flex gap-2">
-            <input id="pCycle" type="number" min="1" inputmode="numeric" placeholder="Water every … days" class="flex-1 rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
-            <label class="shrink-0 grid place-items-center rounded-xl bg-white border border-line px-4 text-sm text-sub cursor-pointer">📷<input id="pPhoto" type="file" accept="image/*" class="hidden" /></label>
+        <div class="rounded-2xl bg-card border border-line card-shadow p-4 mb-4">
+          <label class="w-full rounded-2xl bg-accent/10 border border-accent/20 px-4 py-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-[.99] transition">
+            <span class="text-4xl mb-2">📷</span>
+            <span class="font-bold text-ink">Take or upload a plant photo</span>
+            <span class="mt-1 text-xs text-sub leading-relaxed">AI will suggest the name, notes, and watering schedule. You can edit everything before saving.</span>
+            <input id="pPhoto" type="file" accept="image/*" capture="environment" class="hidden" />
+          </label>
+          <p id="pPhotoName" class="mt-2 text-[11px] text-sub text-center"></p>
+          <p id="pAiStatus" class="mt-1 text-[11px] text-sub text-center"></p>
+
+          <div class="mt-4 border-t border-line pt-4 space-y-2">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold text-[15px]">Review details</h3>
+              <span class="text-[11px] text-sub">Editable</span>
+            </div>
+            <input id="pName" type="text" placeholder="Plant name" class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+            <textarea id="pNotes" rows="2" maxlength="500" placeholder="Description and care notes" class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none resize-none"></textarea>
+            <input id="pCycle" type="number" min="1" inputmode="numeric" placeholder="Water every ... days" class="w-full rounded-xl bg-white border border-line px-4 py-3 text-[15px] text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
           </div>
-          <p id="pPhotoName" class="text-[11px] text-sub"></p>
-          <p id="pAiStatus" class="text-[11px] text-sub"></p>
           <button id="plantAdd" class="w-full rounded-full bg-accent hover:bg-accentdark text-white font-semibold py-3 active:scale-95 transition">Add plant</button>
         </div>
         <ul id="plantList" class="space-y-3"></ul>
@@ -1010,10 +1020,10 @@ Plants overdue: ${overdue}`;
     el("pPhotoName").textContent = file ? ("📷 " + file.name) : "";
     el("pAiStatus").textContent = "";
     if (!file) return;
-    if (!window.coupledAIImage) { el("pAiStatus").textContent = window.coupledAIError || "Plant AI is still loading — add details manually for now."; return; }
+    if (!window.coupledAIImage) { el("pAiStatus").textContent = window.coupledAIError || "Plant AI is still loading — fill the details manually for now."; return; }
     const hadName = !!el("pName").value.trim(), hadNotes = !!el("pNotes").value.trim(), hadCycle = !!el("pCycle").value.trim();
     plantAiBusy = true;
-    el("pAiStatus").textContent = "Looking at the plant photo…";
+    el("pAiStatus").textContent = "Looking at the photo and filling the details…";
     try {
       plantPhotoData = await compressImage(file, 768, 0.72);
       const prompt = `Identify this houseplant from the image and suggest care details. Return ONLY compact JSON with keys:
@@ -1030,7 +1040,7 @@ Base watering on typical indoor care. If the image is unclear, choose a conserva
       if (name && !hadName) el("pName").value = name;
       if (desc && !hadNotes) el("pNotes").value = desc;
       if (days && !hadCycle) el("pCycle").value = days;
-      el("pAiStatus").textContent = `AI suggested care details${info.confidence ? " · confidence: " + info.confidence : ""}. Review before saving.`;
+      el("pAiStatus").textContent = `Details filled${info.confidence ? " · confidence: " + info.confidence : ""}. Edit anything, then save.`;
     } catch (e) {
       el("pAiStatus").textContent = "Couldn't analyse the photo. You can still add the plant manually.";
       console.warn("plant image analysis failed", e);
