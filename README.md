@@ -10,10 +10,9 @@ A private, offline-first Progressive Web App for two partners — habit tracking
 - 🪴 **Plants** — photo-based AI suggestions for plant name, description, and watering cadence
 - 💶 **Money** — encrypted finance dashboard with Revolut CSV upload, manual entries, deduplication, budget progress, charts, AI insight, and a daily mindful-spending nudge
 - 📎 **Documents** — encrypted document vault with automatic previews and local offline cache after first load
-- 💌 **Partner nudges** — optional warm encrypted in-app nudges, with a gentle reminder to enable them
-- 📊 **Couple Pulse** — private encrypted usage metrics in Profile showing app rhythm and feature engagement for each partner
+- 💌 **Partner nudges** — optional warm encrypted in-app nudges, connection-card replies, and a gentle reminder to enable them
 - 🔒 **Friday Vault** — sealed notes that unlock every Friday 5pm, then live on as a shared history
-- 👫 **Spaces & invites** — sign in with Google, invite your partner by email; you both share one private space
+- 👫 **Spaces & invites** — sign in with Google, invite your partner by email/link; you both share one private space
 - 🔐 **End-to-end encryption** — content is encrypted in the browser (AES-GCM, key from a shared secret phrase); the database only ever stores ciphertext
 - 📶 **Offline-first PWA** — install to your home screen; works offline and syncs when back online
 
@@ -67,7 +66,7 @@ The client is a single static `index.html` served from Netlify — there is no a
 See **[FIREBASE_SETUP.md](FIREBASE_SETUP.md)**. In short: create a Firebase project, enable Google sign-in, create Firestore + paste the rules, drop your `firebaseConfig` into `index.html`, and deploy.
 
 ## How the data model works
-Each couple has one `spaces/{id}` document (members, invites, encryption salt + verifier). App data lives in sub-collections such as `logs`, `items`, `notes`, `financeTx`, and `files` — every content document stores only `{ uid, enc }`, where `enc` is the AES-GCM ciphertext of the real content. Security rules restrict every space and its sub-collections to its members.
+Each couple has one `spaces/{id}` document (members, invites, encryption salt + verifier). App data lives in sub-collections such as `logs`, `items`, `notes`, `financeTx`, `notices`, and `files` — every content document stores only `{ uid, enc }`, where `enc` is the AES-GCM ciphertext of the real content. Security rules restrict every space and its sub-collections to its members.
 
 ## Privacy
 The content of your habits, lists, and notes is end-to-end encrypted and unreadable without the shared secret phrase — not even the database host can read it. Account emails and space membership remain in clear text because they're required for login and invites. If both partners lose the secret phrase, the data cannot be recovered (by design).

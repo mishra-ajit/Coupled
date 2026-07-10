@@ -45,5 +45,12 @@ service cloud.firestore {
       allow read: if signedIn() && inviteEmail == myEmail();
       allow delete: if signedIn() && (inviteEmail == myEmail() || isMember(resource.data.spaceId));
     }
+
+    // ---- Invite links (doc id == random invite token) ----
+    match /inviteTokens/{token} {
+      allow create, update: if signedIn() && isMember(request.resource.data.spaceId);
+      allow read: if signedIn() && resource.data.email == myEmail();
+      allow delete: if signedIn() && (resource.data.email == myEmail() || isMember(resource.data.spaceId));
+    }
   }
 }

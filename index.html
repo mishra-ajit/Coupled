@@ -141,7 +141,10 @@
       <!-- HABITS (home) -->
       <section id="tabHabits" class="tab-panel">
         <div id="connectionCard" class="rounded-2xl bg-card border border-line card-shadow p-4 mb-5"></div>
+        <div id="connectionInbox" class="hidden rounded-2xl bg-accent/10 border border-accent/20 p-4 mb-5"></div>
+        <div id="homeWait" class="hidden rounded-2xl bg-card border border-line card-shadow p-5 mb-5 text-center"></div>
 
+        <div id="homeMain">
         <div class="mb-5">
           <div class="flex items-center justify-between mb-2">
             <h3 class="text-xs font-semibold text-sub uppercase tracking-wide">This week</h3>
@@ -193,6 +196,7 @@
             <span id="todayCount" class="text-xs text-sub">0 logged</span>
           </div>
           <ul id="todayList" class="space-y-2 text-sm"><li class="text-sub italic">Nothing logged yet — tap a habit above.</li></ul>
+        </div>
         </div>
       </section>
 
@@ -474,24 +478,17 @@
       <label class="block text-xs font-medium text-sub mb-1">Your space</label>
       <ul id="membersList" class="mb-4 space-y-1.5 text-sm"></ul>
 
-      <div class="mb-5 rounded-2xl bg-appbg border border-line p-4">
-        <div class="flex items-center justify-between gap-2 mb-3">
-          <div>
-            <h3 class="font-semibold text-[15px]">Couple Pulse</h3>
-            <p class="text-[11px] text-sub">A private view of app rhythm and feature engagement.</p>
-          </div>
-          <span id="pulseWindow" class="shrink-0 text-[11px] text-sub">30 days</span>
-        </div>
-        <div id="pulseSummary" class="grid grid-cols-2 gap-2 mb-3"></div>
-        <div id="pulseFeatures" class="space-y-2"></div>
-      </div>
-
       <label class="block text-xs font-medium text-sub mb-1">Invite your partner (by Google email)</label>
       <div class="flex gap-2">
         <input id="inInvite" type="email" inputmode="email" placeholder="partner@gmail.com" class="flex-1 rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
         <button id="inviteBtn" class="rounded-xl bg-accent hover:bg-accentdark text-white font-semibold px-4 active:scale-95 transition">Invite</button>
       </div>
-      <p class="mt-1.5 text-[11px] text-sub">They sign in with that Google account and join automatically — sharing this same space.</p>
+      <p class="mt-1.5 text-[11px] text-sub">This creates a private invite link and opens an email draft. They join after signing in with that Google account.</p>
+      <div id="inviteShareBox" class="hidden mt-3 rounded-xl bg-appbg border border-line p-3">
+        <div class="text-[11px] text-sub mb-1">Invite link</div>
+        <div id="inviteLinkText" class="break-all text-xs text-ink"></div>
+        <button id="inviteCopyBtn" class="mt-2 w-full rounded-full bg-white hover:bg-card border border-line py-2 text-sm font-medium active:scale-95 transition">Copy invite link</button>
+      </div>
 
       <div class="mt-5 border-t border-line pt-4">
         <label class="block text-xs font-medium text-sub mb-1">Documents <span id="docCounter" class="text-sub">0/100</span></label>
@@ -687,7 +684,7 @@
 
   /* ---------- state ---------- */
   let auth = null, db = null, ME = null, SPACE_ID = null, SPACE_DOC = null;
-  const STATE = { logs: [], items: [], notes: [], weights: [], plants: [], moods: [], ai: [], habits: [], listDefs: [], files: [], financeTx: [], notices: [], usage: [] };
+  const STATE = { logs: [], items: [], notes: [], weights: [], plants: [], moods: [], ai: [], habits: [], listDefs: [], files: [], financeTx: [], notices: [] };
   const PENDING = { logs: false, items: false, notes: false, financeTx: false };
   let unsub = [], ACTIVE_TAB = "habits", ACTIVE_SUB = "shopping", booting = false, weightChart = null, moodChart = null, financeCatChart = null, financeTrendChart = null, financeDailyBusy = false, plantPhotoData = "", plantAiBusy = false;
 
@@ -729,7 +726,8 @@
     el("habLabel").addEventListener("keydown", (e) => { if (e.key === "Enter") addHabit(); });
     document.querySelectorAll(".tab-btn").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
     document.querySelectorAll(".install-btn").forEach((b) => b.addEventListener("click", doInstall));
-    el("docsOpen").addEventListener("click", () => { el("docsModal").classList.remove("hidden"); trackFeatureVisit("docs"); renderDocs(); });
+    el("docsOpen").addEventListener("click", () => { el("docsModal").classList.remove("hidden"); renderDocs(); });
+    el("inviteCopyBtn").addEventListener("click", copyInviteLink);
     el("docsClose").addEventListener("click", closeDocsModal);
     el("docsModal").addEventListener("click", (ev) => { if (ev.target === el("docsModal")) closeDocsModal(); });
     el("docInput").addEventListener("change", () => addFiles(el("docInput").files));
@@ -820,38 +818,54 @@
       try { mine = await db.collection("spaces").where("members", "array-contains", ME.uid).limit(1).get({ source: "cache" }); } catch (e) { mine = { empty: true, docs: [] }; }
       if (mine.empty) mine = await db.collection("spaces").where("members", "array-contains", ME.uid).limit(1).get();
       if (!mine.empty) { SPACE_ID = mine.docs[0].id; SPACE_DOC = mine.docs[0].data(); return; }
+      const token = inviteTokenParam();
+      if (token) {
+        try {
+          const tok = await db.collection("inviteTokens").doc(token).get();
+          if (tok.exists && String(tok.data().email || "").toLowerCase() === ME.email) {
+            await joinInvitedSpace(tok.data().spaceId, token);
+            return;
+          }
+        } catch (e) { console.warn("invite token lookup failed", e); }
+      }
       const inv = await db.collection("invites").doc(ME.email).get();
       if (inv.exists) {
-        const spaceId = inv.data().spaceId; const upd = {};
-        upd["members"] = firebase.firestore.FieldValue.arrayUnion(ME.uid);
-        upd["memberEmails"] = firebase.firestore.FieldValue.arrayUnion(ME.email);
-        upd["memberProfiles." + ME.uid] = { name: ME.name, email: ME.email };
-        await db.collection("spaces").doc(spaceId).update(upd);
-        await db.collection("invites").doc(ME.email).delete().catch(() => {});
-        SPACE_ID = spaceId; SPACE_DOC = (await db.collection("spaces").doc(spaceId).get()).data(); return;
+        await joinInvitedSpace(inv.data().spaceId, inv.data().token || "");
+        return;
       }
       const doc = { ownerUid: ME.uid, ownerEmail: ME.email, members: [ME.uid], memberEmails: [ME.email], memberProfiles: { [ME.uid]: { name: ME.name, email: ME.email } }, invitedEmails: [], createdAt: firebase.firestore.FieldValue.serverTimestamp() };
       const ref = await db.collection("spaces").add(doc); SPACE_ID = ref.id; SPACE_DOC = doc;
     } finally { booting = false; }
   }
+  function inviteTokenParam() { try { return new URL(location.href).searchParams.get("invite") || ""; } catch (e) { return ""; } }
+  async function joinInvitedSpace(spaceId, token) {
+    const upd = {};
+    upd["members"] = firebase.firestore.FieldValue.arrayUnion(ME.uid);
+    upd["memberEmails"] = firebase.firestore.FieldValue.arrayUnion(ME.email);
+    upd["memberProfiles." + ME.uid] = { name: ME.name, email: ME.email };
+    await db.collection("spaces").doc(spaceId).update(upd);
+    await db.collection("invites").doc(ME.email).delete().catch(() => {});
+    if (token) await db.collection("inviteTokens").doc(token).delete().catch(() => {});
+    SPACE_ID = spaceId; SPACE_DOC = (await db.collection("spaces").doc(spaceId).get()).data();
+    if (history && history.replaceState) history.replaceState(null, "", location.pathname);
+  }
   function spaceRef() { return db.collection("spaces").doc(SPACE_ID); }
 
   function startListeners() {
     teardownListeners();
-    unsub.push(spaceRef().onSnapshot((snap) => { SPACE_DOC = snap.data() || SPACE_DOC; renderMembers(); renderInsights(); refreshStatus(); }));
-    unsub.push(spaceRef().collection("logs").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.logs = await Promise.all(s.docs.map(decDoc)); PENDING.logs = s.metadata.hasPendingWrites; renderToday(); renderHabitStates(); renderInsights(); renderConnectionCard(); renderPulse(); refreshStatus(); }));
-    unsub.push(spaceRef().collection("items").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.items = await Promise.all(s.docs.map(decDoc)); PENDING.items = s.metadata.hasPendingWrites; renderLists(); renderConnectionCard(); renderPulse(); refreshStatus(); }));
-    unsub.push(spaceRef().collection("notes").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.notes = await Promise.all(s.docs.map(decDoc)); PENDING.notes = s.metadata.hasPendingWrites; renderVault(); renderInsights(); renderPulse(); refreshStatus(); }));
-    unsub.push(spaceRef().collection("weights").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.weights = await Promise.all(s.docs.map(decDoc)); renderPulse(); if (!el("settingsModal").classList.contains("hidden")) renderWeightChart(); }));
-    unsub.push(spaceRef().collection("plants").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.plants = await Promise.all(s.docs.map(decDoc)); renderPlants(); renderConnectionCard(); renderPulse(); }));
-    unsub.push(spaceRef().collection("moods").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.moods = await Promise.all(s.docs.map(decDoc)); renderMood(); renderConnectionCard(); renderPulse(); }));
+    unsub.push(spaceRef().onSnapshot((snap) => { SPACE_DOC = snap.data() || SPACE_DOC; renderMembers(); renderInviteShareBox(); renderOnboardingState(); renderConnectionCard(); renderInsights(); refreshStatus(); }));
+    unsub.push(spaceRef().collection("logs").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.logs = await Promise.all(s.docs.map(decDoc)); PENDING.logs = s.metadata.hasPendingWrites; renderToday(); renderHabitStates(); renderInsights(); renderConnectionCard(); refreshStatus(); }));
+    unsub.push(spaceRef().collection("items").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.items = await Promise.all(s.docs.map(decDoc)); PENDING.items = s.metadata.hasPendingWrites; renderLists(); renderConnectionCard(); refreshStatus(); }));
+    unsub.push(spaceRef().collection("notes").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.notes = await Promise.all(s.docs.map(decDoc)); PENDING.notes = s.metadata.hasPendingWrites; renderVault(); renderInsights(); refreshStatus(); }));
+    unsub.push(spaceRef().collection("weights").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.weights = await Promise.all(s.docs.map(decDoc)); if (!el("settingsModal").classList.contains("hidden")) renderWeightChart(); }));
+    unsub.push(spaceRef().collection("plants").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.plants = await Promise.all(s.docs.map(decDoc)); renderPlants(); renderConnectionCard(); }));
+    unsub.push(spaceRef().collection("moods").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.moods = await Promise.all(s.docs.map(decDoc)); renderMood(); renderConnectionCard(); }));
     unsub.push(spaceRef().collection("ai").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.ai = await Promise.all(s.docs.map(decDoc)); renderAI(); renderFinanceDailyNudge(); }));
     unsub.push(spaceRef().collection("habits").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.habits = await Promise.all(s.docs.map(decDoc)); if (STATE.habits.length === 0) seedDefaultHabits(); buildHabitGrid(); renderToday(); renderInsights(); renderHabitsSettings(); }));
     unsub.push(spaceRef().collection("lists").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.listDefs = await Promise.all(s.docs.map(decDoc)); renderLists(); renderListSettings(); }));
-    unsub.push(spaceRef().collection("files").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.files = await Promise.all(s.docs.map(decDoc)); renderDocs(); renderPulse(); }));
-    unsub.push(spaceRef().collection("financeTx").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.financeTx = await Promise.all(s.docs.map(decDoc)); PENDING.financeTx = s.metadata.hasPendingWrites; renderFinance(); renderConnectionCard(); renderPulse(); refreshStatus(); }));
-    unsub.push(spaceRef().collection("notices").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.notices = await Promise.all(s.docs.map(decDoc)); processPartnerNotices(); }));
-    unsub.push(spaceRef().collection("usage").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.usage = await Promise.all(s.docs.map(decDoc)); renderPulse(); }));
+    unsub.push(spaceRef().collection("files").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.files = await Promise.all(s.docs.map(decDoc)); renderDocs(); }));
+    unsub.push(spaceRef().collection("financeTx").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.financeTx = await Promise.all(s.docs.map(decDoc)); PENDING.financeTx = s.metadata.hasPendingWrites; renderFinance(); renderConnectionCard(); refreshStatus(); }));
+    unsub.push(spaceRef().collection("notices").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.notices = await Promise.all(s.docs.map(decDoc)); processPartnerNotices(); renderConnectionInbox(); }));
   }
   function teardownListeners() { unsub.forEach((u) => { try { u(); } catch (e) {} }); unsub = []; }
 
@@ -896,8 +910,7 @@
     el("financeBudget").value = localStorage.getItem("coupled_finance_budget") || "";
     el("financeDate").value = todayStr();
     switchTab(ACTIVE_TAB);
-    trackUsage("open", "home", "opened app");
-    renderQuote(); renderConnectionCard(); renderToday(); renderLists(); renderVault(); renderPlants(); renderMood(); renderAI(); renderDocs(); renderInsights(); renderFinance(); refreshStatus(); renderNudgeSettings(); setTimeout(maybePromptPartnerNudges, 1200);
+    renderQuote(); renderOnboardingState(); renderConnectionCard(); renderConnectionInbox(); renderToday(); renderLists(); renderVault(); renderPlants(); renderMood(); renderAI(); renderDocs(); renderInsights(); renderFinance(); refreshStatus(); renderNudgeSettings(); setTimeout(maybePromptPartnerNudges, 1200);
   }
   function switchTab(tab) {
     ACTIVE_TAB = tab;
@@ -909,120 +922,11 @@
     if (tab === "habits") renderMood();
     if (tab === "nest") switchSub(ACTIVE_SUB);
     if (tab === "finance") renderFinance();
-    trackFeatureVisit(tab === "finance" ? "wallet" : tab === "habits" ? "home" : tab);
   }
   function switchSub(sub) {
     const keys = nestLists().map((l) => l.key);
     ACTIVE_SUB = keys.includes(sub) ? sub : "shopping";
     renderLists();
-  }
-  const PULSE_DAYS = 30;
-  const PULSE_FEATURES = [
-    { key:"home", label:"Home", emoji:"🏡" },
-    { key:"nest", label:"Nest", emoji:"🪺" },
-    { key:"plants", label:"Plants", emoji:"🪴" },
-    { key:"wallet", label:"Wallet", emoji:"💰" },
-    { key:"vault", label:"Vault", emoji:"💌" },
-    { key:"docs", label:"Docs", emoji:"📎" },
-    { key:"profile", label:"Profile", emoji:"👤" },
-  ];
-  const pulseFeature = (key) => PULSE_FEATURES.find((f) => f.key === key) || { key, label: key || "Other", emoji:"✨" };
-  function pulseCutoff(days = PULSE_DAYS) { const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - days + 1); return d.getTime(); }
-  function pulseTs(value) {
-    if (!value) return 0;
-    const t = new Date(value).getTime();
-    return isNaN(t) ? 0 : t;
-  }
-  function pulsePush(events, row, feature, type, ts, action) {
-    const when = pulseTs(ts);
-    if (!row || row._undecryptable || !row.uid || !when || when < pulseCutoff()) return;
-    events.push({ uid: row.uid, feature, type, action: action || type, ts: when });
-  }
-  function pulseEvents() {
-    const events = [];
-    STATE.logs.forEach((x) => pulsePush(events, x, "home", "action", x.timestamp, x.habit ? "logged " + x.habit : "logged habit"));
-    STATE.moods.forEach((x) => pulsePush(events, x, "home", "action", x.date, "mood check-in"));
-    STATE.weights.forEach((x) => pulsePush(events, x, "home", "action", x.date, "weight check-in"));
-    STATE.items.forEach((x) => pulsePush(events, x, "nest", "action", x.ts, "list item"));
-    STATE.plants.forEach((x) => pulsePush(events, x, "plants", "action", x.lastWatered, "plant care"));
-    STATE.notes.forEach((x) => pulsePush(events, x, "vault", "action", x.ts, "sealed note"));
-    STATE.financeTx.forEach((x) => pulsePush(events, x, "wallet", "action", x.at || x.date, "transaction"));
-    STATE.files.forEach((x) => pulsePush(events, x, "docs", "action", x.at, "document"));
-    STATE.usage.forEach((x) => pulsePush(events, x, x.feature || "home", x.type || "view", x.ts, x.action || ""));
-    return events;
-  }
-  function pulseLastSeen(ts) {
-    if (!ts) return "No activity yet";
-    const diff = Date.now() - ts;
-    const mins = Math.max(1, Math.round(diff / 60000));
-    if (mins < 60) return mins + "m ago";
-    const hrs = Math.round(mins / 60);
-    if (hrs < 48) return hrs + "h ago";
-    return new Date(ts).toLocaleDateString([], { month:"short", day:"numeric" });
-  }
-  function renderPulse() {
-    const summary = el("pulseSummary"), features = el("pulseFeatures");
-    if (!summary || !features) return;
-    const mem = members();
-    const events = pulseEvents();
-    if (el("pulseWindow")) el("pulseWindow").textContent = PULSE_DAYS + " days";
-    if (!events.length) {
-      summary.innerHTML = `<div class="col-span-2 rounded-xl bg-white border border-line p-3 text-center text-sm text-sub">No rhythm yet. Use Coupled for a few days and this becomes your private little activity map.</div>`;
-      features.innerHTML = "";
-      return;
-    }
-    summary.innerHTML = mem.map((m) => {
-      const mine = events.filter((e) => e.uid === m.uid);
-      const actions = mine.filter((e) => e.type === "action").length;
-      const opens = mine.filter((e) => e.type === "open").length;
-      const byFeature = {};
-      mine.forEach((e) => { byFeature[e.feature] = (byFeature[e.feature] || 0) + 1; });
-      const topKey = Object.entries(byFeature).sort((a, b) => b[1] - a[1])[0]?.[0];
-      const top = topKey ? pulseFeature(topKey) : null;
-      const last = mine.reduce((max, e) => Math.max(max, e.ts), 0);
-      return `<div class="rounded-xl bg-white border border-line p-3">
-        <div class="text-sm font-semibold text-ink truncate">${escapeHtml(m.name)}${m.uid === (ME && ME.uid) ? " · you" : ""}</div>
-        <div class="mt-2 grid grid-cols-2 gap-2 text-[11px]">
-          <span class="rounded-lg bg-appbg px-2 py-1"><b class="text-ink">${opens}</b> opens</span>
-          <span class="rounded-lg bg-appbg px-2 py-1"><b class="text-ink">${actions}</b> moves</span>
-        </div>
-        <div class="mt-2 text-[11px] text-sub">${top ? `${top.emoji} ${escapeHtml(top.label)} is the hot spot` : "No favorite yet"}</div>
-        <div class="text-[11px] text-sub">Last active ${pulseLastSeen(last)}</div>
-      </div>`;
-    }).join("");
-    const totals = PULSE_FEATURES.map((f) => {
-      const rows = events.filter((e) => e.feature === f.key);
-      const byUid = {};
-      mem.forEach((m) => { byUid[m.uid] = rows.filter((e) => e.uid === m.uid).length; });
-      return { ...f, total: rows.length, byUid };
-    }).filter((f) => f.total > 0).sort((a, b) => b.total - a.total);
-    const max = Math.max(1, ...totals.map((f) => f.total));
-    features.innerHTML = totals.length ? totals.map((f) => {
-      const names = mem.map((m, i) => {
-        const count = f.byUid[m.uid] || 0;
-        const cls = i === 0 ? "bg-partnerA" : "bg-partnerB";
-        return `<span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full ${cls}"></span>${escapeHtml((m.name || "").split(" ")[0])}: ${count}</span>`;
-      }).join("");
-      return `<div class="rounded-xl bg-white border border-line px-3 py-2">
-        <div class="flex items-center gap-2 text-sm"><span>${f.emoji}</span><span class="font-semibold text-ink flex-1">${escapeHtml(f.label)}</span><span class="text-sub text-xs">${f.total}</span></div>
-        <div class="mt-2 h-2 rounded-full bg-appbg overflow-hidden"><div class="h-full rounded-full bg-accent" style="width:${Math.max(7, Math.round((f.total / max) * 100))}%"></div></div>
-        <div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-sub">${names}</div>
-      </div>`;
-    }).join("") : `<div class="rounded-xl bg-white border border-line p-3 text-sm text-sub">No feature activity in the last ${PULSE_DAYS} days.</div>`;
-  }
-  async function trackUsage(type, feature, action) {
-    if (!SPACE_ID || !KEY || !ME) return;
-    try {
-      await spaceRef().collection("usage").doc(uid()).set(await encPayload({ type, feature, action: action || "", ts: new Date().toISOString(), user: ME.name }));
-    } catch (e) { console.warn("usage tracking failed", e); }
-  }
-  function trackFeatureVisit(feature) {
-    if (!SPACE_ID || !KEY || !ME) return;
-    const hour = new Date().toISOString().slice(0, 13);
-    const key = `coupled_usage_${SPACE_ID}_${ME.uid}_${feature}_${hour}`;
-    if (localStorage.getItem(key)) return;
-    localStorage.setItem(key, "1");
-    trackUsage("view", feature, "visited " + pulseFeature(feature).label);
   }
   function renderQuote() { const box = el("dailyQuote"); if (box) box.textContent = QUOTES[dayOfYear() % QUOTES.length]; }
 
@@ -1177,11 +1081,45 @@
     try {
       const n = { emoji: idea.icon, title: idea.title, body: idea.body, type: "connection", detail: idea.action, fromUid: ME.uid, fromName: ME.name, ts: new Date().toISOString() };
       await spaceRef().collection("notices").add(await encPayload(n));
-      await trackUsage("action", "home", "sent connection move");
       localStorage.setItem(connectionSentKey(), idea.action);
       showToast("Sent: " + idea.action);
       renderConnectionCard();
     } catch (e) { showToast("Couldn't send right now"); console.warn("connection move failed", e); }
+  }
+  function renderConnectionInbox() {
+    const box = el("connectionInbox"); if (!box || !ME) return;
+    const replies = new Set(STATE.notices.filter((n) => n.type === "connectionReply" && n.replyTo).map((n) => n.replyTo));
+    const incoming = STATE.notices
+      .filter((n) => n.type === "connection" && n.fromUid && n.fromUid !== ME.uid && !replies.has(n.id))
+      .sort((a, b) => (b.ts || "").localeCompare(a.ts || ""));
+    const n = incoming[0];
+    box.classList.toggle("hidden", !n);
+    if (!n) return;
+    const answers = ["I needed this", "Tell me more", "Tonight?", "❤️"];
+    box.innerHTML = `<div class="text-[11px] uppercase tracking-wide text-accent font-semibold mb-1">Reply waiting</div>
+      <h3 class="font-bold text-[16px] text-ink">${escapeHtml(n.title || "Connection note")}</h3>
+      <p class="mt-1 text-sm text-ink leading-relaxed">${escapeHtml(n.body || "")}</p>
+      <div class="mt-3 grid grid-cols-2 gap-2">${answers.map((a) => `<button data-conn-answer="${escapeHtml(a)}" data-reply-to="${n.id}" class="rounded-full bg-white hover:bg-card border border-line px-3 py-2 text-sm font-medium active:scale-95 transition">${escapeHtml(a)}</button>`).join("")}</div>`;
+    box.querySelectorAll("[data-conn-answer]").forEach((b) => b.addEventListener("click", () => answerConnection(b.dataset.replyTo, b.dataset.connAnswer)));
+  }
+  async function answerConnection(replyTo, answer) {
+    const original = STATE.notices.find((n) => n.id === replyTo);
+    if (!original || !SPACE_ID || !KEY || !ME) return;
+    try {
+      await spaceRef().collection("notices").add(await encPayload({
+        emoji:"💬",
+        title:"Connection answered",
+        body:`${firstName(ME.name)} replied: ${answer}`,
+        type:"connectionReply",
+        detail:answer,
+        replyTo,
+        fromUid: ME.uid,
+        fromName: ME.name,
+        ts: new Date().toISOString(),
+      }));
+      showToast("Reply sent");
+      renderConnectionInbox();
+    } catch (e) { showToast("Couldn't send reply"); console.warn("connection answer failed", e); }
   }
 
   /* ---------- Profile / invite / members ---------- */
@@ -1191,7 +1129,7 @@
     el("meAvatar").innerHTML = avatarHtml("text-base");
     if (!el("wDate").value) el("wDate").value = todayStr();
     el("settingsMsg").textContent = "";
-    renderMembers(); renderHabitsSettings(); renderListSettings(); renderDocs(); renderNudgeSettings(); renderPulse(); el("settingsModal").classList.remove("hidden"); renderWeightChart(); trackFeatureVisit("profile");
+    renderMembers(); renderHabitsSettings(); renderListSettings(); renderDocs(); renderNudgeSettings(); renderInviteShareBox(); el("settingsModal").classList.remove("hidden"); renderWeightChart();
   }
   function closeSettings() { el("settingsModal").classList.add("hidden"); }
   function members() {
@@ -1204,14 +1142,57 @@
     (SPACE_DOC.invitedEmails || []).filter((e) => !(SPACE_DOC.memberEmails || []).includes(e)).forEach((e) => rows.push(`<li class="flex items-center gap-2 text-sub"><span class="h-1.5 w-1.5 rounded-full bg-partnerB"></span>${escapeHtml(e)} <span class="text-[10px]">invited</span></li>`));
     ul.innerHTML = rows.join("");
   }
+  function pendingInvite() {
+    const emails = ((SPACE_DOC && SPACE_DOC.invitedEmails) || []).filter((e) => !((SPACE_DOC && SPACE_DOC.memberEmails) || []).includes(e));
+    const meta = (SPACE_DOC && SPACE_DOC.inviteMeta) || {};
+    const email = emails[0] || "";
+    return email ? { email, url: (meta[email] && meta[email].url) || "" } : null;
+  }
+  function renderInviteShareBox() {
+    const box = el("inviteShareBox"); if (!box || !SPACE_DOC) return;
+    const inv = pendingInvite();
+    box.classList.toggle("hidden", !inv || !inv.url);
+    if (inv && inv.url) el("inviteLinkText").textContent = inv.url;
+  }
+  async function copyInviteLink() {
+    const inv = pendingInvite();
+    if (!inv || !inv.url) return;
+    try { await navigator.clipboard.writeText(inv.url); showToast("Invite link copied"); }
+    catch (e) { el("settingsMsg").className = "mt-3 text-center text-xs text-sub"; el("settingsMsg").textContent = inv.url; }
+  }
+  function renderOnboardingState() {
+    const wait = el("homeWait"), main = el("homeMain"); if (!wait || !main || !SPACE_DOC) return;
+    const solo = members().length < 2;
+    wait.classList.toggle("hidden", !solo);
+    main.classList.toggle("hidden", solo);
+    if (!solo) return;
+    const inv = pendingInvite();
+    wait.innerHTML = `<div class="mx-auto h-12 w-12 rounded-2xl bg-accent/10 grid place-items-center text-2xl mb-3">💌</div>
+      <h3 class="font-bold text-lg">${inv ? "Waiting for your partner" : "Start your shared space"}</h3>
+      <p class="mt-2 text-sm text-sub leading-relaxed">${inv ? `Invite sent to ${escapeHtml(inv.email)}. Once they sign in with Google and enter your shared secret phrase, this becomes your private space for two.` : "Invite your partner first. Until then, Coupled keeps the dashboard quiet so onboarding feels clear."}</p>
+      <button data-open-profile="1" class="mt-4 rounded-full bg-accent hover:bg-accentdark text-white text-sm font-semibold px-5 py-2.5 active:scale-95 transition">${inv ? "View invite link" : "Invite partner"}</button>`;
+    wait.querySelector("[data-open-profile]").addEventListener("click", openSettings);
+  }
+  function inviteUrlFor(token) { return location.origin + location.pathname + "?invite=" + encodeURIComponent(token); }
+  function openInviteEmail(email, url) {
+    const subject = encodeURIComponent("Join me on Coupled");
+    const body = encodeURIComponent(`I created our private Coupled space.\n\nOpen this invite link, sign in with Google using ${email}, and enter our shared secret phrase:\n\n${url}\n\nCoupled keeps our shared notes, lists, habits, wallet, plants, and documents private.`);
+    window.open(`mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`, "_blank");
+  }
   async function invitePartner() {
     const email = el("inInvite").value.trim().toLowerCase(); const msg = el("settingsMsg");
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Enter a valid email."; return; }
     if (email === ME.email) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "That's you 🙂"; return; }
     try {
-      await db.collection("invites").doc(email).set({ spaceId: SPACE_ID, invitedByUid: ME.uid, invitedByEmail: ME.email, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-      await spaceRef().update({ invitedEmails: firebase.firestore.FieldValue.arrayUnion(email) });
-      el("inInvite").value = ""; msg.className = "mt-3 text-center text-xs text-[#0a7d2c]"; msg.textContent = `Invited ${email}. They'll join when they sign in.`;
+      const token = uid();
+      const url = inviteUrlFor(token);
+      const invite = { spaceId: SPACE_ID, email, token, invitedByUid: ME.uid, invitedByEmail: ME.email, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+      await db.collection("invites").doc(email).set(invite);
+      await db.collection("inviteTokens").doc(token).set(invite);
+      await spaceRef().set({ invitedEmails: firebase.firestore.FieldValue.arrayUnion(email), inviteMeta: { [email]: { token, url, at: new Date().toISOString() } } }, { merge: true });
+      if (SPACE_DOC) { SPACE_DOC.invitedEmails = [...new Set([...(SPACE_DOC.invitedEmails || []), email])]; SPACE_DOC.inviteMeta = { ...(SPACE_DOC.inviteMeta || {}), [email]: { token, url, at: new Date().toISOString() } }; }
+      el("inInvite").value = ""; msg.className = "mt-3 text-center text-xs text-[#0a7d2c]"; msg.textContent = `Invite ready for ${email}. Your email app should open with the link.`;
+      renderInviteShareBox(); renderOnboardingState(); renderConnectionCard(); openInviteEmail(email, url);
     } catch (err) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Invite failed: " + (err && err.message ? err.message : err); }
   }
 
@@ -1220,7 +1201,7 @@
     const msg = el("settingsMsg"); if (!SPACE_ID || !KEY) return;
     const kg = parseFloat(el("wKg").value); const date = el("wDate").value || todayStr();
     if (!kg || kg <= 0 || kg > 500) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Enter a valid weight in kg."; return; }
-    try { await putEnc("weights", "w-" + ME.uid + "-" + date, { date, kg }, ME.uid); await trackUsage("action", "home", "saved weight"); await sendPartnerNudge("weight", "a health check-in"); el("wKg").value = ""; msg.className = "mt-3 text-center text-xs text-[#0a7d2c]"; msg.textContent = `Saved ${kg} kg for ${date} ✓`; }
+    try { await putEnc("weights", "w-" + ME.uid + "-" + date, { date, kg }, ME.uid); await sendPartnerNudge("weight", "a health check-in"); el("wKg").value = ""; msg.className = "mt-3 text-center text-xs text-[#0a7d2c]"; msg.textContent = `Saved ${kg} kg for ${date} ✓`; }
     catch (err) { msg.className = "mt-3 text-center text-xs text-[#c00]"; msg.textContent = "Save failed: " + (err && err.message ? err.message : err); }
   }
   function lineChart(ref, canvasId, valueKey, yOpts, fillBetween) {
@@ -1239,7 +1220,7 @@
   async function logMood(score) {
     if (!SPACE_ID || !KEY || !score) return;
     const date = todayStr(); const note = el("moodNote").value.trim();
-    try { await putEnc("moods", "m-" + ME.uid + "-" + date, { date, score, note }, ME.uid); await trackUsage("action", "home", "saved mood"); await sendPartnerNudge("mood", MOOD_EMOJI[score] || ""); el("moodNote").value = ""; showToast("Mood saved " + (MOOD_EMOJI[score] || "")); }
+    try { await putEnc("moods", "m-" + ME.uid + "-" + date, { date, score, note }, ME.uid); await sendPartnerNudge("mood", MOOD_EMOJI[score] || ""); el("moodNote").value = ""; showToast("Mood saved " + (MOOD_EMOJI[score] || "")); }
     catch (e) { console.warn("mood failed", e); }
   }
   function renderMood() {
@@ -1448,11 +1429,11 @@ Base watering on typical indoor care. If the image is unclear, choose a conserva
     const name = el("pName").value.trim(); if (!name) { showToast("Give the plant a name"); return; }
     const notes = el("pNotes").value.trim(); const cycle = Math.max(1, parseInt(el("pCycle").value, 10) || 7); const file = el("pPhoto").files[0];
     el("plantAdd").disabled = true; el("plantAdd").textContent = "Adding…";
-    try { let photo = ""; if (file) { try { photo = plantPhotoData || await compressImage(file); } catch (e) { photo = ""; } } await spaceRef().collection("plants").add(await encPayload({ name, notes, cycle, lastWatered: new Date().toISOString(), photo })); await trackUsage("action", "plants", "added plant"); await sendPartnerNudge("plant", name); el("pName").value = ""; el("pNotes").value = ""; el("pCycle").value = ""; el("pPhoto").value = ""; el("pPhotoName").textContent = ""; el("pAiStatus").textContent = ""; plantPhotoData = ""; showToast("🪴 Plant added"); }
+    try { let photo = ""; if (file) { try { photo = plantPhotoData || await compressImage(file); } catch (e) { photo = ""; } } await spaceRef().collection("plants").add(await encPayload({ name, notes, cycle, lastWatered: new Date().toISOString(), photo })); await sendPartnerNudge("plant", name); el("pName").value = ""; el("pNotes").value = ""; el("pCycle").value = ""; el("pPhoto").value = ""; el("pPhotoName").textContent = ""; el("pAiStatus").textContent = ""; plantPhotoData = ""; showToast("🪴 Plant added"); }
     catch (e) { showToast("Couldn't add plant"); console.warn(e); }
     el("plantAdd").disabled = false; el("plantAdd").textContent = "Add plant";
   }
-  async function waterPlant(p) { try { await putEnc("plants", p.id, { name: p.name, notes: p.notes || "", cycle: p.cycle || 7, lastWatered: new Date().toISOString(), photo: p.photo || "" }, p.uid || ME.uid); await trackUsage("action", "plants", "watered plant"); await sendPartnerNudge("water", p.name); showToast("💧 Watered " + p.name); } catch (e) { console.warn("water failed", e); } }
+  async function waterPlant(p) { try { await putEnc("plants", p.id, { name: p.name, notes: p.notes || "", cycle: p.cycle || 7, lastWatered: new Date().toISOString(), photo: p.photo || "" }, p.uid || ME.uid); await sendPartnerNudge("water", p.name); showToast("💧 Watered " + p.name); } catch (e) { console.warn("water failed", e); } }
   function deletePlant(id) { if (SPACE_ID) spaceRef().collection("plants").doc(id).delete().catch((e) => console.warn(e)); }
   function dueInfo(p) {
     const last = new Date(p.lastWatered || Date.now());
@@ -1524,7 +1505,7 @@ Base watering on typical indoor care. If the image is unclear, choose a conserva
       return;
     }
     flash(btn); showToast(`${habit.emoji} ${habit.label} logged`);
-    try { await putEnc("logs", id, { user: ME.name, habit: habit.label, timestamp: new Date().toISOString() }, ME.uid); await trackUsage("action", "home", "logged habit"); await sendPartnerNudge("habit", `${habit.emoji || "✅"} ${habit.label}`); } catch (e) { console.warn("log failed", e); }
+    try { await putEnc("logs", id, { user: ME.name, habit: habit.label, timestamp: new Date().toISOString() }, ME.uid); await sendPartnerNudge("habit", `${habit.emoji || "✅"} ${habit.label}`); } catch (e) { console.warn("log failed", e); }
   }
   function flash(btn) { btn.classList.add("flash-success"); const s = btn.querySelector("span"); if (s) { s.classList.add("pop"); setTimeout(() => s.classList.remove("pop"), 400); } setTimeout(() => btn.classList.remove("flash-success"), 650); }
   function renderToday() {
@@ -1573,7 +1554,7 @@ Base watering on typical indoor care. If the image is unclear, choose a conserva
     const input = el("nestInput"); const text = input.value.trim(); const list = activeListDef();
     if (!text || !SPACE_ID || !KEY || !list) return;
     input.value = ""; showToast(`Added to ${list.label}`);
-    try { await spaceRef().collection("items").add(await encPayload({ list: list.key, text, user: ME.name, ts: new Date().toISOString() })); await trackUsage("action", "nest", "added list item"); await sendPartnerNudge("list", text); } catch (e) { console.warn("add item failed", e); }
+    try { await spaceRef().collection("items").add(await encPayload({ list: list.key, text, user: ME.name, ts: new Date().toISOString() })); await sendPartnerNudge("list", text); } catch (e) { console.warn("add item failed", e); }
   }
   function removeItem(id, liEl) { if (liEl) { liEl.style.opacity = "0.4"; liEl.style.transform = "translateX(8px)"; } if (SPACE_ID) spaceRef().collection("items").doc(id).delete().catch((e) => console.warn("remove failed", e)); }
   function renderLists() {
@@ -1608,7 +1589,7 @@ Base watering on typical indoor care. If the image is unclear, choose a conserva
     if (!SPACE_ID || !KEY) return; const input = el("vaultInput"); const text = input.value.trim(); if (!text) return;
     const revealAt = nextReveal().toISOString(); input.value = "";
     showToast(`🔒 Sealed — opens ${new Date(revealAt).toLocaleDateString([], { weekday: "long" })} 5pm`);
-    try { await spaceRef().collection("notes").add(await encPayload({ text, user: ME.name, ts: new Date().toISOString(), revealAt })); await trackUsage("action", "vault", "sealed note"); await sendPartnerNudge("vault", "Friday note"); } catch (e) { console.warn("seal failed", e); }
+    try { await spaceRef().collection("notes").add(await encPayload({ text, user: ME.name, ts: new Date().toISOString(), revealAt })); await sendPartnerNudge("vault", "Friday note"); } catch (e) { console.warn("seal failed", e); }
     renderVault();
   }
   function renderVault() {
@@ -1732,7 +1713,6 @@ Base watering on typical indoor care. If the image is unclear, choose a conserva
         }
       }
       status.textContent = parsedCount ? `Parsed ${parsedCount} · added ${added} · skipped ${dup} duplicates.` : "No valid rows found. Revolut CSVs need Started Date, Description, Amount, and Currency.";
-      if (added) await trackUsage("action", "wallet", "imported CSV");
       showToast(`Imported ${added} transaction${added === 1 ? "" : "s"}`);
     } catch (e) {
       status.textContent = "Upload failed: " + (e && e.message ? e.message : e);
@@ -1754,7 +1734,6 @@ Base watering on typical indoor care. If the image is unclear, choose a conserva
     const tx = { id, date, desc, amount, fee: 0, currency, category: category || financeCategory(desc), month: financeMonthFrom(date), batchId: "manual-" + financeMonthFrom(date), batchName: "Manual entries", source: "manual", at: new Date().toISOString() };
     try {
       await putFinanceTx(tx);
-      await trackUsage("action", "wallet", "added manual transaction");
       ["financeDesc","financeAmount","financeCategory"].forEach((id) => (el(id).value = ""));
       el("financeDate").value = todayStr();
       msg.className = "text-[11px] text-sub text-center"; msg.textContent = "Manual entries use the same duplicate check as CSV imports.";
@@ -1775,7 +1754,6 @@ Base watering on typical indoor care. If the image is unclear, choose a conserva
     if (!confirm(`Remove ${remove.length} duplicate transaction${remove.length === 1 ? "" : "s"}?`)) return;
     try {
       await Promise.all(remove.map((t) => spaceRef().collection("financeTx").doc(t.id).delete()));
-      await trackUsage("action", "wallet", "deduplicated transactions");
       el("financeUploadStatus").textContent = `Removed ${remove.length} duplicate transaction${remove.length === 1 ? "" : "s"}.`;
       showToast("Duplicates removed");
     } catch (e) {
@@ -1964,7 +1942,6 @@ ${summary}`;
 
 ${buildFinanceSummary(rows)}`;
       out.textContent = (await window.coupledAI(prompt)).trim();
-      await trackUsage("action", "wallet", "generated finance insight");
     } catch (e) {
       out.textContent = "Couldn't generate right now: " + (e && e.message ? e.message : e);
     }
@@ -2053,7 +2030,6 @@ ${buildFinanceSummary(rows)}`;
         const fileId = uid();
         for (let i = 0; i < n; i++) { await spaceRef().collection("fileChunks").doc(fileId + "-" + i).set({ fileId, idx: i, uid: ME.uid, enc: await encStr(b64.slice(i * DOC_CHUNK, (i + 1) * DOC_CHUNK)) }); }
         await putEnc("files", fileId, { name: f.name, type: f.type || "application/octet-stream", size: f.size, n, at: new Date().toISOString(), by: ME.name }, ME.uid);
-        await trackUsage("action", "docs", "uploaded document");
       } catch (e) { console.warn("upload failed", e); if (msg) msg.textContent = "Upload failed: " + (e && e.message ? e.message : e); }
     }
     el("docInput").value = "";
