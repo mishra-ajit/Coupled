@@ -502,7 +502,7 @@
         <button id="docsClose" class="h-9 w-9 grid place-items-center rounded-full hover:bg-appbg text-sub active:scale-95 transition">✕</button>
       </div>
       <ul id="docList" class="space-y-2"></ul>
-      <p id="docHint" class="mt-3 text-[11px] text-sub text-center">Tap a document to preview it inline — tap again to collapse. Rename or remove in Profile → Documents.</p>
+      <p id="docHint" class="mt-3 text-[11px] text-sub text-center">Tap once to preview. After the first successful preview, that document is saved on this device for offline use.</p>
     </div>
   </div>
 
@@ -1586,6 +1586,67 @@ ${buildFinanceSummary(rows)}`;
   function b64ToBytes(b64) { const bin = atob(b64); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return bytes; }
   function fmtSize(b) { return b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB"; }
   function fileIcon(t) { t = t || ""; if (t.startsWith("image/")) return "🖼️"; if (t.includes("pdf")) return "📄"; if (t.includes("word") || t.includes("document")) return "📝"; if (t.includes("sheet") || t.includes("excel") || t.includes("csv")) return "📊"; return "📎"; }
+  const DOC_CACHE_DB = "coupled-doc-cache-v1", DOC_CACHE_STORE = "docs";
+  let docCacheDb = null;
+  function docCacheKey(meta) { return [SPACE_ID || "space", meta.id, meta.size || 0, meta.n || 0, meta.at || ""].join("|"); }
+  function openDocCache() {
+    return new Promise((resolve, reject) => {
+      if (docCacheDb) return resolve(docCacheDb);
+      const req = indexedDB.open(DOC_CACHE_DB, 1);
+      req.onupgradeneeded = () => req.result.createObjectStore(DOC_CACHE_STORE, { keyPath: "key" });
+      req.onsuccess = () => { docCacheDb = req.result; resolve(docCacheDb); };
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function getCachedDoc(meta) {
+    try {
+      const dbx = await openDocCache();
+      return await new Promise((resolve, reject) => {
+        const req = dbx.transaction(DOC_CACHE_STORE, "readonly").objectStore(DOC_CACHE_STORE).get(docCacheKey(meta));
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) { console.warn("doc cache read failed", e); return null; }
+  }
+  async function putCachedDoc(meta, b64) {
+    try {
+      const dbx = await openDocCache();
+      const rec = { key: docCacheKey(meta), fileId: meta.id, b64, type: meta.type || "application/octet-stream", name: meta.name || "file", size: meta.size || 0, cachedAt: Date.now() };
+      await new Promise((resolve, reject) => {
+        const req = dbx.transaction(DOC_CACHE_STORE, "readwrite").objectStore(DOC_CACHE_STORE).put(rec);
+        req.onsuccess = resolve;
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) { console.warn("doc cache write failed", e); }
+  }
+  async function removeCachedDoc(meta) {
+    try {
+      const dbx = await openDocCache();
+      await new Promise((resolve, reject) => {
+        const store = dbx.transaction(DOC_CACHE_STORE, "readwrite").objectStore(DOC_CACHE_STORE);
+        const req = store.openCursor();
+        req.onsuccess = () => {
+          const c = req.result;
+          if (!c) return resolve();
+          if (c.value && c.value.fileId === meta.id) c.delete();
+          c.continue();
+        };
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) { console.warn("doc cache delete failed", e); }
+  }
+  async function getDocB64(meta) {
+    const cached = await getCachedDoc(meta);
+    if (cached && cached.b64) return { b64: cached.b64, cached: true };
+    const snap = await spaceRef().collection("fileChunks").where("fileId", "==", meta.id).get();
+    const chunks = snap.docs.map((d) => d.data()).sort((a, b) => a.idx - b.idx);
+    let b64 = ""; for (const c of chunks) b64 += await decStr(c.enc);
+    await putCachedDoc(meta, b64);
+    return { b64, cached: false };
+  }
+  function docUrlFromB64(meta, b64) {
+    return URL.createObjectURL(new Blob([b64ToBytes(b64)], { type: meta.type || "application/octet-stream" }));
+  }
   async function addFiles(list) {
     if (!SPACE_ID || !KEY) return;
     const files = [...list]; if (!files.length) return;
@@ -1608,10 +1669,8 @@ ${buildFinanceSummary(rows)}`;
   async function openFile(meta) {
     try {
       showToast("Opening " + (meta.name || "file") + "…");
-      const snap = await spaceRef().collection("fileChunks").where("fileId", "==", meta.id).get();
-      const chunks = snap.docs.map((d) => d.data()).sort((a, b) => a.idx - b.idx);
-      let b64 = ""; for (const c of chunks) b64 += await decStr(c.enc);
-      const url = URL.createObjectURL(new Blob([b64ToBytes(b64)], { type: meta.type || "application/octet-stream" }));
+      const { b64 } = await getDocB64(meta);
+      const url = docUrlFromB64(meta, b64);
       window.open(url, "_blank");
       setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch (e) { showToast("Couldn't open file"); console.warn(e); }
@@ -1621,6 +1680,7 @@ ${buildFinanceSummary(rows)}`;
       const snap = await spaceRef().collection("fileChunks").where("fileId", "==", meta.id).get();
       await Promise.all(snap.docs.map((d) => d.ref.delete()));
       await spaceRef().collection("files").doc(meta.id).delete();
+      await removeCachedDoc(meta);
     } catch (e) { console.warn("delete file failed", e); }
   }
   const inlinePreviewUrls = new Map(); // fileId -> object URL, cached while the Docs modal stays open
@@ -1638,17 +1698,15 @@ ${buildFinanceSummary(rows)}`;
     if (inlinePreviewUrls.has(meta.id)) return; // already loaded — just re-show the cached preview
     box.innerHTML = `<p class="text-sub text-sm text-center py-4">Loading ${escapeHtml(meta.name || "file")}…</p>`;
     try {
-      const snap = await spaceRef().collection("fileChunks").where("fileId", "==", meta.id).get();
-      const chunks = snap.docs.map((d) => d.data()).sort((a, b) => a.idx - b.idx);
-      let b64 = ""; for (const c of chunks) b64 += await decStr(c.enc);
-      const url = URL.createObjectURL(new Blob([b64ToBytes(b64)], { type: meta.type || "application/octet-stream" }));
+      const doc = await getDocB64(meta);
+      const url = docUrlFromB64(meta, doc.b64);
       inlinePreviewUrls.set(meta.id, url);
       const t = meta.type || "";
       let inner;
       if (t.startsWith("image/")) inner = `<img src="${url}" class="max-w-full max-h-[50vh] rounded-lg mx-auto" />`;
       else if (t.includes("pdf") || t.startsWith("text/")) inner = `<iframe src="${url}" class="w-full rounded-lg border border-line" style="height:50vh"></iframe>`;
       else inner = `<p class="text-sub text-sm text-center py-4">Preview isn't available for this file type — use Download below.</p>`;
-      box.innerHTML = `${inner}<a href="${url}" download="${escapeHtml(meta.name || "file")}" class="mt-2 inline-block text-sm text-accent font-semibold">⬇ Download</a>`;
+      box.innerHTML = `${inner}<div class="mt-2 flex items-center justify-between gap-2"><span class="text-[11px] text-sub">${doc.cached ? "Available offline" : "Saved for offline use"}</span><a href="${url}" download="${escapeHtml(meta.name || "file")}" class="text-sm text-accent font-semibold">⬇ Download</a></div>`;
     } catch (e) { box.innerHTML = `<p class="text-[#c00] text-sm text-center py-4">Couldn't open this file.</p>`; console.warn(e); }
   }
   async function renameFile(meta) {
