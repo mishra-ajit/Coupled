@@ -9,7 +9,7 @@ A private, offline-first Progressive Web App for two partners — habit tracking
 - 🛒 **Nest lists** — Shopping loads by default; add custom shared lists for movies, books, food ideas, and more
 - 🪴 **Plants** — photo-based AI suggestions for plant name, description, and watering cadence
 - 💶 **Money** — encrypted finance dashboard with Revolut CSV upload, manual entries, deduplication, budget progress, charts, AI insight, and a daily mindful-spending nudge
-- 📎 **Documents** — encrypted document vault with single-tap preview and local offline cache after first preview
+- 📎 **Documents** — encrypted document vault with automatic previews and local offline cache after first load
 - 🔒 **Friday Vault** — sealed notes that unlock every Friday 5pm, then live on as a shared history
 - 👫 **Spaces & invites** — sign in with Google, invite your partner by email; you both share one private space
 - 🔐 **End-to-end encryption** — content is encrypted in the browser (AES-GCM, key from a shared secret phrase); the database only ever stores ciphertext

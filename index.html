@@ -502,7 +502,7 @@
         <button id="docsClose" class="h-9 w-9 grid place-items-center rounded-full hover:bg-appbg text-sub active:scale-95 transition">✕</button>
       </div>
       <ul id="docList" class="space-y-2"></ul>
-      <p id="docHint" class="mt-3 text-[11px] text-sub text-center">Tap once to preview. After the first successful preview, that document is saved on this device for offline use.</p>
+      <p id="docHint" class="mt-3 text-[11px] text-sub text-center">Documents preview automatically here. After the first successful load, each one is saved on this device for offline use.</p>
     </div>
   </div>
 
@@ -693,7 +693,7 @@
     el("habLabel").addEventListener("keydown", (e) => { if (e.key === "Enter") addHabit(); });
     document.querySelectorAll(".tab-btn").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
     document.querySelectorAll(".install-btn").forEach((b) => b.addEventListener("click", doInstall));
-    el("docsOpen").addEventListener("click", () => { renderDocs(); el("docsModal").classList.remove("hidden"); });
+    el("docsOpen").addEventListener("click", () => { el("docsModal").classList.remove("hidden"); renderDocs(); });
     el("docsClose").addEventListener("click", closeDocsModal);
     el("docsModal").addEventListener("click", (ev) => { if (ev.target === el("docsModal")) closeDocsModal(); });
     el("docInput").addEventListener("change", () => addFiles(el("docInput").files));
@@ -1689,24 +1689,27 @@ ${buildFinanceSummary(rows)}`;
     inlinePreviewUrls.clear();
     el("docsModal").classList.add("hidden");
   }
-  async function toggleInlinePreview(meta) {
-    const box = el("docInline-" + meta.id), chev = document.querySelector(`[data-chev="${meta.id}"]`);
+  function renderDocPreview(meta, url, cached) {
+    const t = meta.type || "";
+    let inner;
+    if (t.startsWith("image/")) inner = `<img src="${url}" class="max-w-full max-h-[50vh] rounded-lg mx-auto" />`;
+    else if (t.includes("pdf") || t.startsWith("text/")) inner = `<iframe src="${url}" class="w-full rounded-lg border border-line" style="height:50vh"></iframe>`;
+    else inner = `<p class="text-sub text-sm text-center py-4">Preview isn't available for this file type — use Download below.</p>`;
+    return `${inner}<div class="mt-2 flex items-center justify-between gap-2"><span class="text-[11px] text-sub">${cached ? "Available offline" : "Saved for offline use"}</span><a href="${url}" download="${escapeHtml(meta.name || "file")}" class="text-sm text-accent font-semibold">⬇ Download</a></div>`;
+  }
+  async function loadInlinePreview(meta) {
+    const box = el("docInline-" + meta.id);
     if (!box) return;
-    const isOpen = !box.classList.contains("hidden");
-    if (isOpen) { box.classList.add("hidden"); if (chev) chev.textContent = "›"; return; }
-    box.classList.remove("hidden"); if (chev) chev.textContent = "⌄";
-    if (inlinePreviewUrls.has(meta.id)) return; // already loaded — just re-show the cached preview
+    if (inlinePreviewUrls.has(meta.id)) {
+      box.innerHTML = renderDocPreview(meta, inlinePreviewUrls.get(meta.id), true);
+      return;
+    }
     box.innerHTML = `<p class="text-sub text-sm text-center py-4">Loading ${escapeHtml(meta.name || "file")}…</p>`;
     try {
       const doc = await getDocB64(meta);
       const url = docUrlFromB64(meta, doc.b64);
       inlinePreviewUrls.set(meta.id, url);
-      const t = meta.type || "";
-      let inner;
-      if (t.startsWith("image/")) inner = `<img src="${url}" class="max-w-full max-h-[50vh] rounded-lg mx-auto" />`;
-      else if (t.includes("pdf") || t.startsWith("text/")) inner = `<iframe src="${url}" class="w-full rounded-lg border border-line" style="height:50vh"></iframe>`;
-      else inner = `<p class="text-sub text-sm text-center py-4">Preview isn't available for this file type — use Download below.</p>`;
-      box.innerHTML = `${inner}<div class="mt-2 flex items-center justify-between gap-2"><span class="text-[11px] text-sub">${doc.cached ? "Available offline" : "Saved for offline use"}</span><a href="${url}" download="${escapeHtml(meta.name || "file")}" class="text-sm text-accent font-semibold">⬇ Download</a></div>`;
+      box.innerHTML = renderDocPreview(meta, url, doc.cached);
     } catch (e) { box.innerHTML = `<p class="text-[#c00] text-sm text-center py-4">Couldn't open this file.</p>`; console.warn(e); }
   }
   async function renameFile(meta) {
@@ -1722,8 +1725,8 @@ ${buildFinanceSummary(rows)}`;
     if (el("docCounter")) el("docCounter").textContent = `${cnt}/100`;
     const ml = el("docList");
     if (ml) {
-      ml.innerHTML = cnt ? files.map((f) => `<li><button data-prev="${f.id}" class="w-full flex items-center gap-3 rounded-xl bg-card border border-line card-shadow px-3 py-3 text-left active:scale-[.99] transition"><span class="text-xl">${fileIcon(f.type)}</span><span class="min-w-0 flex-1"><span class="block text-sm text-ink truncate">${escapeHtml(f.name || "file")}</span><span class="block text-[11px] text-sub">${fmtSize(f.size || 0)}</span></span><span class="text-accent text-xs font-semibold" data-chev="${f.id}">›</span></button><div id="docInline-${f.id}" class="hidden mt-1 rounded-xl border border-line bg-white p-3"></div></li>`).join("") : `<li class="text-sub italic text-sm py-2">No documents yet — add some in Profile → Documents.</li>`;
-      ml.querySelectorAll("[data-prev]").forEach((b) => b.addEventListener("click", () => { const f = STATE.files.find((x) => x.id === b.dataset.prev); if (f) toggleInlinePreview(f); }));
+      ml.innerHTML = cnt ? files.map((f) => `<li class="rounded-2xl bg-card border border-line card-shadow p-3"><div class="flex items-center gap-3 mb-2"><span class="text-xl">${fileIcon(f.type)}</span><span class="min-w-0 flex-1"><span class="block text-sm text-ink truncate">${escapeHtml(f.name || "file")}</span><span class="block text-[11px] text-sub">${fmtSize(f.size || 0)}</span></span></div><div id="docInline-${f.id}" class="rounded-xl border border-line bg-white p-3"><p class="text-sub text-sm text-center py-4">Queued for preview…</p></div></li>`).join("") : `<li class="text-sub italic text-sm py-2">No documents yet — add some in Profile → Documents.</li>`;
+      if (!el("docsModal").classList.contains("hidden")) files.forEach((f, i) => setTimeout(() => loadInlinePreview(f), i * 120));
     }
     const sl = el("docCfgList");
     if (sl) {
