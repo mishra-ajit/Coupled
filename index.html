@@ -487,8 +487,15 @@
       </div>
 
       <div class="mt-5 border-t border-line pt-4">
-        <button id="notifyEnable" class="w-full mb-2 rounded-full bg-white hover:bg-appbg border border-line py-2.5 text-sm font-medium active:scale-95 transition">💌 Enable partner nudges</button>
-        <p id="notifyMsg" class="mb-3 text-center text-[11px] text-sub">Get a gentle nudge when your partner logs something while Coupled is open.</p>
+        <label class="flex items-center justify-between gap-3 rounded-xl bg-white border border-line px-3 py-3">
+          <span>
+            <span class="block text-sm font-medium text-ink">💌 In-app partner nudges</span>
+            <span class="block text-[11px] text-sub">Warm little prompts when your partner logs something.</span>
+          </span>
+          <input id="notifyToggle" type="checkbox" class="h-5 w-5 accent-accent" />
+        </label>
+        <button id="notifyEnable" class="w-full mt-2 mb-2 rounded-full bg-white hover:bg-appbg border border-line py-2.5 text-sm font-medium active:scale-95 transition">Enable browser notifications</button>
+        <p id="notifyMsg" class="mb-3 text-center text-[11px] text-sub">In-app nudges work while Coupled is open. Browser notifications are optional.</p>
         <button class="install-btn hidden w-full rounded-full bg-white hover:bg-appbg border border-line py-2.5 text-sm font-medium active:scale-95 transition">📲 Install Coupled as an app</button>
         <p class="ios-hint hidden text-center text-[11px] text-sub">To install on iPhone: tap <b>Share ⬆️</b> → <b>Add to Home Screen</b>.</p>
       </div>
@@ -509,6 +516,19 @@
   </div>
 
   <div id="toast" class="pointer-events-none fixed left-1/2 -translate-x-1/2 bottom-8 z-50 opacity-0 transition-opacity duration-300 bg-ink text-white text-sm font-medium px-4 py-2.5 rounded-full shadow-lg"></div>
+  <div id="nudgePrompt" class="hidden fixed left-4 right-4 bottom-24 z-50 rounded-2xl bg-card border border-line card-shadow p-4">
+    <div class="flex gap-3">
+      <div class="text-2xl">💌</div>
+      <div class="min-w-0 flex-1">
+        <div class="font-semibold text-ink">Keep each other in the loop</div>
+        <p class="mt-1 text-sm text-sub leading-relaxed">Turn on partner nudges for tiny, warm updates when one of you logs a win, a mood, a list item, or a plant moment.</p>
+        <div class="mt-3 flex gap-2">
+          <button id="nudgePromptEnable" class="rounded-full bg-accent hover:bg-accentdark text-white text-sm font-semibold px-4 py-2 active:scale-95 transition">Turn on</button>
+          <button id="nudgePromptLater" class="rounded-full bg-white hover:bg-appbg border border-line text-sub text-sm font-medium px-4 py-2 active:scale-95 transition">Later</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
   const FIREBASE_CONFIG = {
@@ -713,6 +733,9 @@
     el("financeAiBtn").addEventListener("click", generateFinanceInsight);
     el("financeDailyRefresh").addEventListener("click", () => ensureFinanceDailyNudge(true));
     el("notifyEnable").addEventListener("click", enablePartnerNudges);
+    el("notifyToggle").addEventListener("change", (e) => setInAppNudgesEnabled(e.target.checked));
+    el("nudgePromptEnable").addEventListener("click", () => setInAppNudgesEnabled(true));
+    el("nudgePromptLater").addEventListener("click", dismissNudgePrompt);
     setInterval(() => { if (ACTIVE_TAB === "vault") renderVault(); if (ACTIVE_TAB === "plants") renderPlants(); }, 60000);
   }
 
@@ -858,7 +881,7 @@
     el("financeBudget").value = localStorage.getItem("coupled_finance_budget") || "";
     el("financeDate").value = todayStr();
     switchTab(ACTIVE_TAB);
-    renderQuote(); renderToday(); renderLists(); renderVault(); renderPlants(); renderMood(); renderAI(); renderDocs(); renderInsights(); renderFinance(); refreshStatus();
+    renderQuote(); renderToday(); renderLists(); renderVault(); renderPlants(); renderMood(); renderAI(); renderDocs(); renderInsights(); renderFinance(); refreshStatus(); renderNudgeSettings(); setTimeout(maybePromptPartnerNudges, 1200);
   }
   function switchTab(tab) {
     ACTIVE_TAB = tab;
@@ -885,7 +908,7 @@
     el("meAvatar").innerHTML = avatarHtml("text-base");
     if (!el("wDate").value) el("wDate").value = todayStr();
     el("settingsMsg").textContent = "";
-    renderMembers(); renderHabitsSettings(); renderListSettings(); renderDocs(); el("settingsModal").classList.remove("hidden"); renderWeightChart();
+    renderMembers(); renderHabitsSettings(); renderListSettings(); renderDocs(); renderNudgeSettings(); el("settingsModal").classList.remove("hidden"); renderWeightChart();
   }
   function closeSettings() { el("settingsModal").classList.add("hidden"); }
   function members() {
@@ -972,6 +995,36 @@
 
   /* ---------- Partner nudges ---------- */
   const noticeSeenKey = () => "coupled_notice_seen_" + SPACE_ID;
+  const nudgesEnabledKey = () => "coupled_nudges_enabled_" + SPACE_ID;
+  const nudgeReminderKey = () => "coupled_nudge_reminder_" + SPACE_ID;
+  function inAppNudgesEnabled() { return localStorage.getItem(nudgesEnabledKey()) === "1"; }
+  function setInAppNudgesEnabled(on) {
+    if (!SPACE_ID) return;
+    localStorage.setItem(nudgesEnabledKey(), on ? "1" : "0");
+    if (on) {
+      localStorage.setItem(nudgeReminderKey(), todayStr());
+      hideNudgePrompt();
+      showToast("💌 Partner nudges are on");
+    }
+    renderNudgeSettings();
+  }
+  function renderNudgeSettings() {
+    if (!SPACE_ID || !el("notifyToggle")) return;
+    const on = inAppNudgesEnabled();
+    el("notifyToggle").checked = on;
+    const msg = el("notifyMsg");
+    if (msg) msg.textContent = on ? "In-app nudges are on. Browser notifications are optional." : "In-app nudges are off. Turn them on for warm partner updates while Coupled is open.";
+    if (el("notifyEnable") && "Notification" in window && Notification.permission === "granted") el("notifyEnable").textContent = "Browser notifications enabled";
+  }
+  function maybePromptPartnerNudges() {
+    if (!SPACE_ID || inAppNudgesEnabled() || members().length < 2) return;
+    const key = nudgeReminderKey();
+    if (localStorage.getItem(key) === todayStr()) return;
+    localStorage.setItem(key, todayStr());
+    el("nudgePrompt").classList.remove("hidden");
+  }
+  function hideNudgePrompt() { el("nudgePrompt").classList.add("hidden"); }
+  function dismissNudgePrompt() { localStorage.setItem(nudgeReminderKey(), todayStr()); hideNudgePrompt(); }
   function nudgeLine(type, detail) {
     const who = (ME && ME.name ? ME.name.split(" ")[0] : "Your partner");
     const safe = detail || "";
@@ -999,7 +1052,7 @@
     let last = Number(localStorage.getItem(key) || 0);
     if (!last) { localStorage.setItem(key, String(Date.now())); return; }
     const fresh = STATE.notices.filter((n) => n.fromUid && n.fromUid !== ME.uid && n.ts && new Date(n.ts).getTime() > last).sort((a, b) => (a.ts || "").localeCompare(b.ts || ""));
-    fresh.forEach((n) => showPartnerNudge(n));
+    if (inAppNudgesEnabled()) fresh.forEach((n) => showPartnerNudge(n));
     if (fresh.length) localStorage.setItem(key, String(Math.max(...fresh.map((n) => new Date(n.ts).getTime()))));
   }
   function showPartnerNudge(n) {
@@ -1015,6 +1068,7 @@
     if (!("Notification" in window)) { msg.textContent = "Browser notifications are not supported here, but in-app nudges still work."; return; }
     const perm = Notification.permission === "default" ? await Notification.requestPermission() : Notification.permission;
     msg.textContent = perm === "granted" ? "Partner nudges are on for this browser while Coupled is open." : "Notifications were not enabled. In-app nudges still appear while Coupled is open.";
+    renderNudgeSettings();
   }
 
   /* ---------- Plants ---------- */
