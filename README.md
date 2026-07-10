@@ -11,6 +11,7 @@ A private, offline-first Progressive Web App for two partners — habit tracking
 - 💶 **Money** — encrypted finance dashboard with Revolut CSV upload, manual entries, deduplication, budget progress, charts, AI insight, and a daily mindful-spending nudge
 - 📎 **Documents** — encrypted document vault with automatic previews and local offline cache after first load
 - 💌 **Partner nudges** — optional warm encrypted in-app nudges, with a gentle reminder to enable them
+- 📊 **Couple Pulse** — private encrypted usage metrics in Profile showing app rhythm and feature engagement for each partner
 - 🔒 **Friday Vault** — sealed notes that unlock every Friday 5pm, then live on as a shared history
 - 👫 **Spaces & invites** — sign in with Google, invite your partner by email; you both share one private space
 - 🔐 **End-to-end encryption** — content is encrypted in the browser (AES-GCM, key from a shared secret phrase); the database only ever stores ciphertext
