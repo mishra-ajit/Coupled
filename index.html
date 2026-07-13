@@ -203,6 +203,7 @@
       <!-- NEST (custom shared lists) -->
       <section id="tabNest" class="tab-panel hidden">
         <div id="nestListTabs" class="flex gap-2 overflow-x-auto pb-2 mb-3 -mx-1 px-1"></div>
+        <p id="nestSwipeHint" class="mb-3 text-center text-[11px] text-sub">Swipe left or right to move between lists.</p>
         <div class="rounded-2xl bg-card border border-line card-shadow p-4 mb-4">
           <div class="flex items-center justify-between gap-3 mb-3">
             <div>
@@ -231,7 +232,7 @@
           <p id="pPhotoName" class="mt-2 text-[11px] text-sub text-center"></p>
           <p id="pAiStatus" class="mt-1 text-[11px] text-sub text-center"></p>
 
-          <div class="mt-4 border-t border-line pt-4 space-y-2">
+          <div id="plantDetails" class="hidden mt-4 border-t border-line pt-4 space-y-2">
             <div class="flex items-center justify-between">
               <h3 class="font-semibold text-[15px]">Review details</h3>
               <span class="text-[11px] text-sub">Editable</span>
@@ -478,6 +479,21 @@
       <label class="block text-xs font-medium text-sub mb-1">Your space</label>
       <ul id="membersList" class="mb-4 space-y-1.5 text-sm"></ul>
 
+      <div class="mb-5 rounded-2xl bg-appbg border border-line p-4">
+        <h3 class="font-semibold text-[15px] mb-1">Friday Vault timing</h3>
+        <p class="text-[11px] text-sub mb-3">Choose when sealed notes open and how long they stay open.</p>
+        <div class="grid grid-cols-3 gap-2">
+          <select id="vaultDay" class="rounded-xl bg-white border border-line px-2 py-2.5 text-sm text-ink focus:border-accent focus:outline-none">
+            <option value="0">Sun</option><option value="1">Mon</option><option value="2">Tue</option><option value="3">Wed</option><option value="4">Thu</option><option value="5">Fri</option><option value="6">Sat</option>
+          </select>
+          <select id="vaultHour" class="rounded-xl bg-white border border-line px-2 py-2.5 text-sm text-ink focus:border-accent focus:outline-none"></select>
+          <select id="vaultOpenHours" class="rounded-xl bg-white border border-line px-2 py-2.5 text-sm text-ink focus:border-accent focus:outline-none">
+            <option value="6">6h</option><option value="12">12h</option><option value="24">24h</option><option value="48">48h</option>
+          </select>
+        </div>
+        <p id="vaultCfgMsg" class="mt-2 text-[11px] text-sub"></p>
+      </div>
+
       <label class="block text-xs font-medium text-sub mb-1">Invite your partner (by Google email)</label>
       <div class="flex gap-2">
         <input id="inInvite" type="email" inputmode="email" placeholder="partner@gmail.com" class="flex-1 rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
@@ -541,6 +557,16 @@
     </div>
   </div>
 
+  <div id="onboardingModal" class="hidden fixed inset-0 z-50 bg-black/30 backdrop-blur-sm px-4 py-8 overflow-y-auto">
+    <div class="mx-auto max-w-md w-full rounded-2xl bg-card border border-line card-shadow p-5 fade-in">
+      <div id="onboardingBody"></div>
+      <div class="mt-5 flex gap-2">
+        <button id="onboardingSkip" class="rounded-full bg-white hover:bg-appbg border border-line text-sub text-sm font-medium px-4 py-2.5 active:scale-95 transition">Skip</button>
+        <button id="onboardingAction" class="flex-1 rounded-full bg-accent hover:bg-accentdark text-white text-sm font-semibold px-4 py-2.5 active:scale-95 transition">Next</button>
+      </div>
+    </div>
+  </div>
+
   <script>
   const FIREBASE_CONFIG = {
     apiKey: "AIzaSyCiAmHonwoJleeTXXIMFcJgIPRJD1ipcmM",
@@ -562,7 +588,7 @@
     { key:"shopping", label:"Shopping", emoji:"🛒", hint:"Shared list for things to buy." },
     { key:"todo", label:"To-Do", emoji:"📝", hint:"Shared list for tasks and small reminders." },
   ];
-  const VAULT_REVEAL_DOW = 5, VAULT_REVEAL_HOUR = 17, VAULT_OPEN_HOURS = 24;
+  const DEFAULT_VAULT = { day: 5, hour: 17, openHours: 24 };
   const MOOD_EMOJI = ["", "😢", "🙁", "😐", "🙂", "😄"];
 
   // A year of gentle daily reminders — one reveals each morning.
@@ -709,6 +735,9 @@
     el("profileBtn").addEventListener("click", openSettings);
     el("settingsClose").addEventListener("click", closeSettings);
     el("settingsModal").addEventListener("click", (ev) => { if (ev.target === el("settingsModal")) closeSettings(); });
+    el("onboardingModal").addEventListener("click", (ev) => { if (ev.target === el("onboardingModal")) finishOnboarding(); });
+    el("onboardingSkip").addEventListener("click", finishOnboarding);
+    el("onboardingAction").addEventListener("click", onOnboardingAction);
     el("signOutBtn").addEventListener("click", doSignOut);
     el("keySignOut").addEventListener("click", doSignOut);
     el("keyBtn").addEventListener("click", onKeySubmit);
@@ -735,6 +764,9 @@
     el("nestInput").addEventListener("keydown", (e) => { if (e.key === "Enter") addFromInput(); });
     el("listAdd").addEventListener("click", addNestList);
     el("listLabel").addEventListener("keydown", (e) => { if (e.key === "Enter") addNestList(); });
+    wireNestSwipe();
+    buildVaultHourOptions();
+    ["vaultDay","vaultHour","vaultOpenHours"].forEach((id) => el(id).addEventListener("change", saveVaultSettings));
     el("financeCsv").addEventListener("change", () => { ingestFinanceFiles(el("financeCsv").files); el("financeCsv").value = ""; });
     el("financeDedupe").addEventListener("click", dedupeFinanceExisting);
     el("financeAddManual").addEventListener("click", addManualFinanceTx);
@@ -853,7 +885,7 @@
 
   function startListeners() {
     teardownListeners();
-    unsub.push(spaceRef().onSnapshot((snap) => { SPACE_DOC = snap.data() || SPACE_DOC; renderMembers(); renderInviteShareBox(); renderOnboardingState(); renderConnectionCard(); renderInsights(); refreshStatus(); }));
+    unsub.push(spaceRef().onSnapshot((snap) => { SPACE_DOC = snap.data() || SPACE_DOC; renderMembers(); renderInviteShareBox(); renderOnboardingState(); renderConnectionCard(); renderVaultSettings(); renderVault(); renderInsights(); refreshStatus(); }));
     unsub.push(spaceRef().collection("logs").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.logs = await Promise.all(s.docs.map(decDoc)); PENDING.logs = s.metadata.hasPendingWrites; renderToday(); renderHabitStates(); renderInsights(); renderConnectionCard(); refreshStatus(); }));
     unsub.push(spaceRef().collection("items").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.items = await Promise.all(s.docs.map(decDoc)); PENDING.items = s.metadata.hasPendingWrites; renderLists(); renderConnectionCard(); refreshStatus(); }));
     unsub.push(spaceRef().collection("notes").onSnapshot({ includeMetadataChanges: true }, async (s) => { STATE.notes = await Promise.all(s.docs.map(decDoc)); PENDING.notes = s.metadata.hasPendingWrites; renderVault(); renderInsights(); refreshStatus(); }));
@@ -910,7 +942,7 @@
     el("financeBudget").value = localStorage.getItem("coupled_finance_budget") || "";
     el("financeDate").value = todayStr();
     switchTab(ACTIVE_TAB);
-    renderQuote(); renderOnboardingState(); renderConnectionCard(); renderConnectionInbox(); renderToday(); renderLists(); renderVault(); renderPlants(); renderMood(); renderAI(); renderDocs(); renderInsights(); renderFinance(); refreshStatus(); renderNudgeSettings(); setTimeout(maybePromptPartnerNudges, 1200);
+    renderQuote(); renderOnboardingState(); renderConnectionCard(); renderConnectionInbox(); renderToday(); renderLists(); renderVault(); renderPlants(); renderMood(); renderAI(); renderDocs(); renderInsights(); renderFinance(); refreshStatus(); renderNudgeSettings(); setTimeout(maybePromptPartnerNudges, 1200); setTimeout(maybeShowOnboarding, 600);
   }
   function switchTab(tab) {
     ACTIVE_TAB = tab;
@@ -928,7 +960,73 @@
     ACTIVE_SUB = keys.includes(sub) ? sub : "shopping";
     renderLists();
   }
+  function switchSubBy(delta) {
+    const lists = nestLists();
+    if (lists.length < 2) return;
+    const idx = Math.max(0, lists.findIndex((l) => l.key === ACTIVE_SUB));
+    const next = lists[(idx + delta + lists.length) % lists.length];
+    switchSub(next.key);
+    showToast(`${next.emoji || ""} ${next.label}`.trim());
+  }
+  function wireNestSwipe() {
+    const panel = el("tabNest"); if (!panel) return;
+    let sx = 0, sy = 0;
+    panel.addEventListener("touchstart", (e) => { const t = e.changedTouches[0]; sx = t.clientX; sy = t.clientY; }, { passive: true });
+    panel.addEventListener("touchend", (e) => {
+      const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+      if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) switchSubBy(dx < 0 ? 1 : -1);
+    }, { passive: true });
+  }
   function renderQuote() { const box = el("dailyQuote"); if (box) box.textContent = QUOTES[dayOfYear() % QUOTES.length]; }
+
+  /* ---------- Onboarding ---------- */
+  const onboardingKey = () => "coupled_onboarding_done_" + SPACE_ID + "_" + (ME ? ME.uid : "");
+  const onboardingStepKey = () => "coupled_onboarding_step_" + SPACE_ID + "_" + (ME ? ME.uid : "");
+  let onboardingStep = 0;
+  let onboardingPaused = false;
+  const ONBOARDING = [
+    { icon:"🏡", title:"Welcome to your private home base", text:"Coupled is small on purpose: Home is for today, Nest is for lists, Plants and Wallet keep life organized, and Vault saves little surprises." },
+    { icon:"💌", title:"Invite your partner first", text:"The app becomes useful when both of you can notice, reply, and build small rituals together.", action:"Open invite" },
+    { icon:"✨", title:"Tune what you track", text:"Add habits and custom Nest lists from Profile so Home matches your real life instead of a default template.", action:"Open Profile" },
+    { icon:"🔔", title:"Turn on gentle nudges", text:"Browser notifications help small wins and connection cards get noticed. True closed-app push still needs a hosted push sender.", action:"Enable nudges" },
+  ];
+  function maybeShowOnboarding() {
+    if (!SPACE_ID || !ME || localStorage.getItem(onboardingKey())) return;
+    onboardingStep = Math.min(ONBOARDING.length - 1, parseInt(localStorage.getItem(onboardingStepKey()) || "0", 10) || 0);
+    renderOnboarding();
+    el("onboardingModal").classList.remove("hidden");
+  }
+  function renderOnboarding() {
+    const s = ONBOARDING[Math.min(onboardingStep, ONBOARDING.length - 1)];
+    el("onboardingBody").innerHTML = `<div class="text-center">
+      <div class="mx-auto h-14 w-14 rounded-2xl bg-accent/10 grid place-items-center text-3xl mb-4">${s.icon}</div>
+      <div class="text-[11px] uppercase tracking-wide text-accent font-semibold mb-1">Step ${onboardingStep + 1} of ${ONBOARDING.length}</div>
+      <h2 class="text-xl font-bold text-ink">${escapeHtml(s.title)}</h2>
+      <p class="mt-2 text-sm text-sub leading-relaxed">${escapeHtml(s.text)}</p>
+    </div>`;
+    el("onboardingAction").textContent = s.action || (onboardingStep === ONBOARDING.length - 1 ? "Done" : "Next");
+  }
+  function onOnboardingAction() {
+    const s = ONBOARDING[onboardingStep];
+    if (s && (s.action === "Open invite" || s.action === "Open Profile")) {
+      advanceOnboardingStep();
+      onboardingPaused = true;
+      el("onboardingModal").classList.add("hidden");
+      openSettings();
+      return;
+    }
+    if (s && s.action === "Enable nudges") { setInAppNudgesEnabled(true); enablePartnerNudges(); }
+    if (onboardingStep < ONBOARDING.length - 1) { onboardingStep++; renderOnboarding(); return; }
+    finishOnboarding();
+  }
+  function advanceOnboardingStep() {
+    onboardingStep = Math.min(ONBOARDING.length - 1, onboardingStep + 1);
+    if (SPACE_ID && ME) localStorage.setItem(onboardingStepKey(), String(onboardingStep));
+  }
+  function finishOnboarding() {
+    if (SPACE_ID && ME) localStorage.setItem(onboardingKey(), "1");
+    el("onboardingModal").classList.add("hidden");
+  }
 
   /* ---------- Connection Card ---------- */
   const connectionCycleKey = () => "coupled_connection_cycle_" + SPACE_ID + "_" + todayStr();
@@ -1129,9 +1227,15 @@
     el("meAvatar").innerHTML = avatarHtml("text-base");
     if (!el("wDate").value) el("wDate").value = todayStr();
     el("settingsMsg").textContent = "";
-    renderMembers(); renderHabitsSettings(); renderListSettings(); renderDocs(); renderNudgeSettings(); renderInviteShareBox(); el("settingsModal").classList.remove("hidden"); renderWeightChart();
+    renderMembers(); renderHabitsSettings(); renderListSettings(); renderVaultSettings(); renderDocs(); renderNudgeSettings(); renderInviteShareBox(); el("settingsModal").classList.remove("hidden"); renderWeightChart();
   }
-  function closeSettings() { el("settingsModal").classList.add("hidden"); }
+  function closeSettings() {
+    el("settingsModal").classList.add("hidden");
+    if (onboardingPaused && !localStorage.getItem(onboardingKey())) {
+      onboardingPaused = false;
+      setTimeout(maybeShowOnboarding, 150);
+    }
+  }
   function members() {
     const mp = (SPACE_DOC && SPACE_DOC.memberProfiles) || {}, ids = (SPACE_DOC && SPACE_DOC.members) || [];
     return ids.map((id) => ({ uid: id, name: (mp[id] && mp[id].name) || (mp[id] && mp[id].email) || "Member", email: (mp[id] && mp[id].email) || "" }));
@@ -1141,6 +1245,40 @@
     const rows = members().map((m) => `<li class="flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-accent"></span><span class="text-ink">${escapeHtml(m.name)}</span>${m.uid === ME.uid ? '<span class="text-[10px] text-sub">(you)</span>' : ""}${m.uid === SPACE_DOC.ownerUid ? '<span class="text-[10px] text-accent">owner</span>' : ""}</li>`);
     (SPACE_DOC.invitedEmails || []).filter((e) => !(SPACE_DOC.memberEmails || []).includes(e)).forEach((e) => rows.push(`<li class="flex items-center gap-2 text-sub"><span class="h-1.5 w-1.5 rounded-full bg-partnerB"></span>${escapeHtml(e)} <span class="text-[10px]">invited</span></li>`));
     ul.innerHTML = rows.join("");
+  }
+  function buildVaultHourOptions() {
+    const h = el("vaultHour"); if (!h) return;
+    h.innerHTML = Array.from({ length: 24 }, (_, i) => `<option value="${i}">${String(i).padStart(2, "0")}:00</option>`).join("");
+  }
+  function vaultSettings() {
+    const raw = (SPACE_DOC && SPACE_DOC.vaultSettings) || {};
+    return {
+      day: Number.isInteger(raw.day) ? raw.day : DEFAULT_VAULT.day,
+      hour: Number.isInteger(raw.hour) ? raw.hour : DEFAULT_VAULT.hour,
+      openHours: Number.isInteger(raw.openHours) ? raw.openHours : DEFAULT_VAULT.openHours,
+    };
+  }
+  function renderVaultSettings() {
+    if (!el("vaultDay")) return;
+    const v = vaultSettings();
+    el("vaultDay").value = String(v.day);
+    el("vaultHour").value = String(v.hour);
+    el("vaultOpenHours").value = String(v.openHours);
+    const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    el("vaultCfgMsg").textContent = `Opens ${days[v.day]} at ${String(v.hour).padStart(2, "0")}:00 for ${v.openHours}h.`;
+  }
+  async function saveVaultSettings() {
+    if (!SPACE_ID) return;
+    const cfg = { day: parseInt(el("vaultDay").value, 10), hour: parseInt(el("vaultHour").value, 10), openHours: parseInt(el("vaultOpenHours").value, 10) };
+    try {
+      await spaceRef().set({ vaultSettings: cfg }, { merge: true });
+      SPACE_DOC = { ...(SPACE_DOC || {}), vaultSettings: cfg };
+      renderVaultSettings(); renderVault();
+      showToast("Vault timing updated");
+    } catch (e) {
+      el("vaultCfgMsg").textContent = "Couldn't save Vault timing.";
+      console.warn("vault settings failed", e);
+    }
   }
   function pendingInvite() {
     const emails = ((SPACE_DOC && SPACE_DOC.invitedEmails) || []).filter((e) => !((SPACE_DOC && SPACE_DOC.memberEmails) || []).includes(e));
@@ -1277,7 +1415,7 @@
     const on = inAppNudgesEnabled();
     el("notifyToggle").checked = on;
     const msg = el("notifyMsg");
-    if (msg) msg.textContent = on ? "In-app nudges are on. Browser notifications are optional." : "In-app nudges are off. Turn them on for warm partner updates while Coupled is open.";
+    if (msg) msg.textContent = on ? "In-app nudges are on. Browser alerts appear when Coupled is open or running in the background." : "In-app nudges are off. Turn them on for warm partner updates.";
     if (el("notifyEnable") && "Notification" in window && Notification.permission === "granted") el("notifyEnable").textContent = "Browser notifications enabled";
   }
   function maybePromptPartnerNudges() {
@@ -1323,15 +1461,24 @@
     const title = `${n.emoji || "💚"} ${n.title || "Coupled updated"}`;
     const body = n.body || `${n.fromName || "Your partner"} logged something.`;
     showToast(`${title} — ${body}`);
-    if ("Notification" in window && Notification.permission === "granted") {
-      try { new Notification(title, { body, icon: "icon-192.png", tag: "coupled-partner-nudge" }); } catch (e) {}
-    }
+    showBrowserNotification(title, body);
+  }
+  async function showBrowserNotification(title, body) {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+        const reg = await navigator.serviceWorker.ready;
+        await reg.showNotification(title, { body, icon: "icon-192.png", badge: "icon-192.png", tag: "coupled-partner-nudge", data: { url: location.href } });
+      } else {
+        new Notification(title, { body, icon: "icon-192.png", tag: "coupled-partner-nudge" });
+      }
+    } catch (e) { try { new Notification(title, { body, icon: "icon-192.png" }); } catch (err) {} }
   }
   async function enablePartnerNudges() {
     const msg = el("notifyMsg");
     if (!("Notification" in window)) { msg.textContent = "Browser notifications are not supported here, but in-app nudges still work."; return; }
     const perm = Notification.permission === "default" ? await Notification.requestPermission() : Notification.permission;
-    msg.textContent = perm === "granted" ? "Partner nudges are on for this browser while Coupled is open." : "Notifications were not enabled. In-app nudges still appear while Coupled is open.";
+    msg.textContent = perm === "granted" ? "Browser notifications are enabled for this device. Fully closed-app push still needs a hosted push sender." : "Notifications were not enabled. In-app nudges still appear while Coupled is open.";
     renderNudgeSettings();
   }
 
@@ -1397,6 +1544,7 @@ Plants overdue: ${overdue}`;
     plantPhotoData = "";
     el("pPhotoName").textContent = file ? ("📷 " + file.name) : "";
     el("pAiStatus").textContent = "";
+    el("plantDetails").classList.toggle("hidden", !file);
     if (!file) return;
     if (!window.coupledAIImage) { el("pAiStatus").textContent = window.coupledAIError || "Plant AI is still loading — fill the details manually for now."; return; }
     plantAiBusy = true;
@@ -1429,7 +1577,7 @@ Base watering on typical indoor care. If the image is unclear, choose a conserva
     const name = el("pName").value.trim(); if (!name) { showToast("Give the plant a name"); return; }
     const notes = el("pNotes").value.trim(); const cycle = Math.max(1, parseInt(el("pCycle").value, 10) || 7); const file = el("pPhoto").files[0];
     el("plantAdd").disabled = true; el("plantAdd").textContent = "Adding…";
-    try { let photo = ""; if (file) { try { photo = plantPhotoData || await compressImage(file); } catch (e) { photo = ""; } } await spaceRef().collection("plants").add(await encPayload({ name, notes, cycle, lastWatered: new Date().toISOString(), photo })); await sendPartnerNudge("plant", name); el("pName").value = ""; el("pNotes").value = ""; el("pCycle").value = ""; el("pPhoto").value = ""; el("pPhotoName").textContent = ""; el("pAiStatus").textContent = ""; plantPhotoData = ""; showToast("🪴 Plant added"); }
+    try { let photo = ""; if (file) { try { photo = plantPhotoData || await compressImage(file); } catch (e) { photo = ""; } } await spaceRef().collection("plants").add(await encPayload({ name, notes, cycle, lastWatered: new Date().toISOString(), photo })); await sendPartnerNudge("plant", name); el("pName").value = ""; el("pNotes").value = ""; el("pCycle").value = ""; el("pPhoto").value = ""; el("pPhotoName").textContent = ""; el("pAiStatus").textContent = ""; el("plantDetails").classList.add("hidden"); plantPhotoData = ""; showToast("🪴 Plant added"); }
     catch (e) { showToast("Couldn't add plant"); console.warn(e); }
     el("plantAdd").disabled = false; el("plantAdd").textContent = "Add plant";
   }
@@ -1451,10 +1599,17 @@ Base watering on typical indoor care. If the image is unclear, choose a conserva
     ul.innerHTML = plants.map((p) => {
       const d = dueInfo(p);
       const img = p.photo ? `<img src="${p.photo}" class="h-16 w-16 rounded-xl object-cover shrink-0" />` : `<div class="h-16 w-16 rounded-xl bg-appbg grid place-items-center text-2xl shrink-0">🪴</div>`;
-      return `<li class="rounded-2xl bg-card border border-line card-shadow p-3 flex gap-3 items-center">${img}<div class="min-w-0 flex-1"><div class="font-semibold text-ink truncate">${escapeHtml(p.name || "Plant")}</div>${p.notes ? `<div class="text-[12px] text-sub truncate">${escapeHtml(p.notes)}</div>` : ""}<div class="mt-1 flex items-center gap-1.5 text-[12px] ${d.cls}"><span class="h-1.5 w-1.5 rounded-full ${d.dot}"></span>${d.text} · every ${p.cycle || 7}d</div></div><div class="flex flex-col gap-1 shrink-0"><button data-water="${p.id}" class="rounded-full bg-accent hover:bg-accentdark text-white text-xs font-semibold px-3 py-2 active:scale-95 transition">💧 Water</button><button data-delp="${p.id}" class="rounded-full border border-line text-sub text-[11px] px-3 py-1.5 active:scale-95 transition">Delete</button></div></li>`;
+      const note = p.notes ? `<div id="plantNote-${p.id}" class="mt-1 text-[12px] text-sub leading-relaxed max-h-9 overflow-hidden">${escapeHtml(p.notes)}</div><button data-morep="${p.id}" class="mt-1 text-[11px] text-accent font-semibold">Show more</button>` : "";
+      return `<li class="rounded-2xl bg-card border border-line card-shadow p-3 flex gap-3 items-start">${img}<div class="min-w-0 flex-1"><div class="font-semibold text-ink truncate">${escapeHtml(p.name || "Plant")}</div>${note}<div class="mt-1 flex items-center gap-1.5 text-[12px] ${d.cls}"><span class="h-1.5 w-1.5 rounded-full ${d.dot}"></span>${d.text} · every ${p.cycle || 7}d</div></div><div class="flex flex-col gap-1 shrink-0"><button data-water="${p.id}" class="rounded-full bg-accent hover:bg-accentdark text-white text-xs font-semibold px-3 py-2 active:scale-95 transition">💧 Water</button><button data-delp="${p.id}" class="rounded-full border border-line text-sub text-[11px] px-3 py-1.5 active:scale-95 transition">Delete</button></div></li>`;
     }).join("");
     ul.querySelectorAll("[data-water]").forEach((b) => b.addEventListener("click", () => { const p = STATE.plants.find((x) => x.id === b.dataset.water); if (p) waterPlant(p); }));
     ul.querySelectorAll("[data-delp]").forEach((b) => b.addEventListener("click", () => deletePlant(b.dataset.delp)));
+    ul.querySelectorAll("[data-morep]").forEach((b) => b.addEventListener("click", () => {
+      const note = el("plantNote-" + b.dataset.morep); if (!note) return;
+      const open = note.classList.toggle("max-h-9");
+      note.classList.toggle("overflow-hidden", open);
+      b.textContent = open ? "Show more" : "Show less";
+    }));
   }
 
   function docId(raw) { return String(raw).replace(/[^\w-]/g, "_").slice(0, 120); }
@@ -1581,14 +1736,14 @@ Base watering on typical indoor care. If the image is unclear, choose a conserva
   }
 
   /* ---------- Friday Vault ---------- */
-  function nextReveal(from = new Date()) { const d = new Date(from); let days = (VAULT_REVEAL_DOW - d.getDay() + 7) % 7; let c = new Date(d.getFullYear(), d.getMonth(), d.getDate() + days, VAULT_REVEAL_HOUR, 0, 0, 0); if (c <= d) c = new Date(c.getTime() + 7 * 86400000); return c; }
-  function isVaultOpen(now = new Date()) { const d = new Date(now); let back = (d.getDay() - VAULT_REVEAL_DOW + 7) % 7; let openAt = new Date(d.getFullYear(), d.getMonth(), d.getDate() - back, VAULT_REVEAL_HOUR, 0, 0, 0); if (openAt > d) openAt = new Date(openAt.getTime() - 7 * 86400000); const closeAt = new Date(openAt.getTime() + VAULT_OPEN_HOURS * 3600000); return now >= openAt && now < closeAt ? closeAt : null; }
+  function nextReveal(from = new Date()) { const cfg = vaultSettings(); const d = new Date(from); let days = (cfg.day - d.getDay() + 7) % 7; let c = new Date(d.getFullYear(), d.getMonth(), d.getDate() + days, cfg.hour, 0, 0, 0); if (c <= d) c = new Date(c.getTime() + 7 * 86400000); return c; }
+  function isVaultOpen(now = new Date()) { const cfg = vaultSettings(); const d = new Date(now); let back = (d.getDay() - cfg.day + 7) % 7; let openAt = new Date(d.getFullYear(), d.getMonth(), d.getDate() - back, cfg.hour, 0, 0, 0); if (openAt > d) openAt = new Date(openAt.getTime() - 7 * 86400000); const closeAt = new Date(openAt.getTime() + cfg.openHours * 3600000); return now >= openAt && now < closeAt ? closeAt : null; }
   const isRevealed = (n) => n.revealAt && new Date() >= new Date(n.revealAt);
   function fmtCountdown(ms) { if (ms < 0) ms = 0; const m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60; if (d > 0) return `${d}d ${h}h`; if (h > 0) return `${h}h ${mm}m`; return `${mm}m`; }
   async function sealNote() {
     if (!SPACE_ID || !KEY) return; const input = el("vaultInput"); const text = input.value.trim(); if (!text) return;
     const revealAt = nextReveal().toISOString(); input.value = "";
-    showToast(`🔒 Sealed — opens ${new Date(revealAt).toLocaleDateString([], { weekday: "long" })} 5pm`);
+    showToast(`🔒 Sealed — opens ${new Date(revealAt).toLocaleString([], { weekday: "long", hour: "2-digit", minute: "2-digit" })}`);
     try { await spaceRef().collection("notes").add(await encPayload({ text, user: ME.name, ts: new Date().toISOString(), revealAt })); await sendPartnerNudge("vault", "Friday note"); } catch (e) { console.warn("seal failed", e); }
     renderVault();
   }
@@ -1596,7 +1751,7 @@ Base watering on typical indoor care. If the image is unclear, choose a conserva
     const banner = el("vaultBanner"), listEl = el("vaultList"), countEl = el("sealedCount"); const notes = STATE.notes;
     const sealed = notes.filter((n) => !isRevealed(n)); const revealed = notes.filter((n) => isRevealed(n)); const closeAt = isVaultOpen();
     if (closeAt) { banner.className = "rounded-2xl border border-accent/40 bg-accent/10 p-4 mb-4 text-center"; banner.innerHTML = `<div class="text-2xl mb-1">🔓</div><div class="font-semibold text-accent">The Vault is open!</div><div class="text-xs text-sub mt-1">Reseals in ${fmtCountdown(closeAt - new Date())}</div>`; }
-    else { const next = nextReveal(); banner.className = "rounded-2xl border border-line bg-white p-4 mb-4 text-center"; banner.innerHTML = `<div class="text-2xl mb-1">🔒</div><div class="font-semibold text-ink">Sealed until Friday 5pm</div><div class="text-xs text-sub mt-1">Opens in ${fmtCountdown(next - new Date())}</div>`; }
+    else { const next = nextReveal(); banner.className = "rounded-2xl border border-line bg-white p-4 mb-4 text-center"; banner.innerHTML = `<div class="text-2xl mb-1">🔒</div><div class="font-semibold text-ink">Sealed until ${next.toLocaleString([], { weekday: "long", hour: "2-digit", minute: "2-digit" })}</div><div class="text-xs text-sub mt-1">Opens in ${fmtCountdown(next - new Date())}</div>`; }
     countEl.textContent = sealed.length ? `${sealed.length} sealed note${sealed.length === 1 ? "" : "s"} waiting 🤫` : "";
     if (revealed.length === 0) { listEl.innerHTML = `<li class="text-sub italic text-sm py-2">No notes have opened yet. Seal one above 💌</li>`; return; }
     revealed.sort((a, b) => new Date(b.revealAt) - new Date(a.revealAt) || (b.ts || "").localeCompare(a.ts || ""));
@@ -2126,6 +2281,7 @@ ${buildFinanceSummary(rows)}`;
       self.addEventListener('install', (e) => { self.skipWaiting(); });
       self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))); self.clients.claim(); });
       self.addEventListener('fetch', (e) => { const req = e.request; if (req.method !== 'GET') return; const url = new URL(req.url); if (url.origin !== location.origin) return; e.respondWith(fetch(req).then((res) => { const c = res.clone(); caches.open(CACHE).then((x) => x.put(req, c)).catch(()=>{}); return res; }).catch(() => caches.match(req))); });
+      self.addEventListener('notificationclick', (e) => { e.notification.close(); const target = (e.notification.data && e.notification.data.url) || '/'; e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => { for (const c of list) { if ('focus' in c) return c.focus(); } return clients.openWindow(target); })); });
     `;
     navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode], { type: "text/javascript" }))).catch(() => {});
   }
