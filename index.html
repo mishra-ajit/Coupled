@@ -222,6 +222,7 @@
 
       <!-- PLANTS -->
       <section id="tabPlants" class="tab-panel hidden">
+        <ul id="plantList" class="space-y-3 mb-4"></ul>
         <div class="rounded-2xl bg-card border border-line card-shadow p-4 mb-4">
           <label class="w-full rounded-2xl bg-accent/10 border border-accent/20 px-4 py-5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-[.99] transition">
             <span class="text-4xl mb-2">📷</span>
@@ -243,7 +244,6 @@
           </div>
           <button id="plantAdd" class="mt-4 w-full rounded-full bg-accent hover:bg-accentdark text-white font-semibold py-3 active:scale-95 transition">Add plant</button>
         </div>
-        <ul id="plantList" class="space-y-3"></ul>
       </section>
 
       <!-- FINANCE -->
@@ -1092,17 +1092,6 @@
         action:"Send a tiny thank-you",
         body:`Thank you for caring for ${partnerPlant.name || "our plant"}. Tiny home magic noticed.`,
         weight:65,
-      });
-    }
-    const myMood = STATE.moods.find((m) => ME && m.uid === ME.uid && m.date === todayStr());
-    if (!myMood) {
-      ideas.push({
-        icon:"🙂", tone:"Be knowable", title:"Let them know your weather",
-        text:"A mood check-in gives your partner emotional context without making them guess.",
-        action:"Log your mood",
-        tab:"habits",
-        body:"",
-        weight:60,
       });
     }
     const spendWin = financeSpendWin();
