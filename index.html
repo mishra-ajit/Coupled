@@ -1074,16 +1074,6 @@
         weight:80,
       });
     }
-    const partnerItem = partner ? todaysRows(STATE.items, "ts").filter((i) => i.uid === partner.uid).sort((a, b) => (b.ts || "").localeCompare(a.ts || ""))[0] : null;
-    if (partnerItem) {
-      ideas.push({
-        icon:"🪺", tone:"Team-home move", title:`Turn ${pName}'s Nest update into teamwork`,
-        text:`${pName} added “${partnerItem.text || "something"}”. A quick response keeps shared tasks from feeling invisible.`,
-        action:"Tell them you're on it",
-        body:`I saw “${partnerItem.text || "the Nest update"}”. Team Home has it on the radar.`,
-        weight:70,
-      });
-    }
     const partnerPlant = partner ? todaysRows(STATE.plants, (p) => p.lastWatered).filter((p) => p.uid === partner.uid).sort((a, b) => (b.lastWatered || "").localeCompare(a.lastWatered || ""))[0] : null;
     if (partnerPlant) {
       ideas.push({
@@ -1422,7 +1412,7 @@
     const map = {
       habit: { emoji:"✨", title:"Tiny win logged", body:`${who} just gave Future Us a tiny win${safe ? ": " + safe : ""}. Your move, teammate?` },
       mood: { emoji:"💛", title:"Mood check-in", body:`${who} checked in with their mood. Tiny honesty, big love.` },
-      list: { emoji:"🪺", title:"Nest updated", body:`${who} added ${safe ? "“" + safe + "”" : "something"} to a shared list. Team Home is moving.` },
+      list: { emoji:"🪺", title:"Shared list updated", body:`${who} added ${safe ? "“" + safe + "”" : "something"} to a shared list.` },
       plant: { emoji:"🪴", title:"Plant moment", body:`${who} added ${safe || "a new plant"} to your little jungle.` },
       water: { emoji:"💧", title:"Plant cared for", body:`${who} watered ${safe || "a plant"}. The home jungle approves.` },
       vault: { emoji:"💌", title:"Friday surprise sealed", body:`${who} sealed a note for Friday. Future you has a tiny mystery waiting.` },
