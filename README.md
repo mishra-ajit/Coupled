@@ -10,7 +10,7 @@ A private, offline-first Progressive Web App for two partners — habit tracking
 - 🪴 **Plants** — photo-based AI suggestions for plant name, description, and watering cadence, with editable details after upload
 - 💶 **Money** — encrypted finance dashboard with Revolut CSV upload, manual entries, deduplication, budget progress, charts, AI insight, and a daily mindful-spending nudge
 - 📎 **Documents** — encrypted document vault with automatic previews and local offline cache after first load
-- 💌 **Partner nudges** — optional warm encrypted in-app nudges, connection-card replies, service-worker browser alerts, and a gentle reminder to enable them
+- 💌 **Partner nudges** — optional warm encrypted in-app nudges, service-worker browser alerts, and a gentle reminder to enable them
 - 🔒 **Friday Vault** — sealed notes with configurable opening window, then live on as a shared history
 - 👋 **Onboarding** — lightweight first-run guide for inviting a partner, configuring the space, and enabling nudges
 - 👫 **Spaces & invites** — sign in with Google, invite your partner by email/link; you both share one private space
