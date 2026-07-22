@@ -7,6 +7,7 @@ A private, offline-first Progressive Web App for two partners — habit tracking
 ## Features
 - ✅ **Habits** — tap to log; per-person weekly insights (side by side)
 - 💞 **Heart sync** — relationship-aware daily check-ins from “Need care” to “Glowing,” with a shared two-week rhythm
+- 🎬 **Watch picks** — encrypted partner preferences, weekly AI-curated movies and shows, private voting, and shared matches revealed with the Friday Vault
 - 🛒 **Nest lists** — Shopping loads by default; add custom shared lists for movies, books, food ideas, and more; swipe between lists on mobile
 - 🪴 **Plants** — photo-based AI suggestions for plant name, description, and watering cadence, with editable details after upload
 - 💶 **Money** — encrypted finance dashboard with Revolut CSV upload, manual entries, deduplication, budget progress, charts, AI insight, and a daily mindful-spending nudge
@@ -68,7 +69,7 @@ The client is a single static `index.html` served from Netlify — there is no a
 See **[FIREBASE_SETUP.md](FIREBASE_SETUP.md)**. In short: create a Firebase project, enable Google sign-in, create Firestore + paste the rules, drop your `firebaseConfig` into `index.html`, and deploy.
 
 ## How the data model works
-Each couple has one `spaces/{id}` document (members, invites, encryption salt + verifier). App data lives in sub-collections such as `logs`, `items`, `notes`, `financeTx`, `notices`, and `files` — every content document stores only `{ uid, enc }`, where `enc` is the AES-GCM ciphertext of the real content. Security rules restrict every space and its sub-collections to its members.
+Each couple has one `spaces/{id}` document (members, invites, encryption salt + verifier). App data lives in sub-collections such as `logs`, `items`, `notes`, `financeTx`, `moviePrefs`, `movieRecs`, `movieVotes`, `notices`, and `files` — every content document stores only `{ uid, enc }`, where `enc` is the AES-GCM ciphertext of the real content. Security rules restrict every space and its sub-collections to its members.
 
 ## Privacy
 The content of your habits, lists, and notes is end-to-end encrypted and unreadable without the shared secret phrase — not even the database host can read it. Account emails and space membership remain in clear text because they're required for login and invites. If both partners lose the secret phrase, the data cannot be recovered (by design).
