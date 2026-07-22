@@ -6,6 +6,7 @@ A private, offline-first Progressive Web App for two partners — habit tracking
 
 ## Features
 - ✅ **Habits** — tap to log; per-person weekly insights (side by side)
+- 💞 **Heart sync** — relationship-aware daily check-ins from “Need care” to “Glowing,” with a shared two-week rhythm
 - 🛒 **Nest lists** — Shopping loads by default; add custom shared lists for movies, books, food ideas, and more; swipe between lists on mobile
 - 🪴 **Plants** — photo-based AI suggestions for plant name, description, and watering cadence, with editable details after upload
 - 💶 **Money** — encrypted finance dashboard with Revolut CSV upload, manual entries, deduplication, budget progress, charts, AI insight, and a daily mindful-spending nudge

@@ -166,17 +166,17 @@
 
         <div class="rounded-2xl bg-card border border-line card-shadow p-4 mb-5">
           <div class="flex items-center justify-between mb-2">
-            <h3 class="font-semibold text-[15px]">How are you feeling today?</h3>
+            <h3 class="font-semibold text-[15px]">How does your heart feel today?</h3>
             <span id="moodToday" class="text-xs text-sub"></span>
           </div>
           <div id="moodPicker" class="flex justify-between gap-1 mb-2">
-            <button data-mood="1" class="mood-btn flex-1 text-2xl py-2 rounded-xl hover:bg-appbg transition">😢</button>
-            <button data-mood="2" class="mood-btn flex-1 text-2xl py-2 rounded-xl hover:bg-appbg transition">🙁</button>
-            <button data-mood="3" class="mood-btn flex-1 text-2xl py-2 rounded-xl hover:bg-appbg transition">😐</button>
-            <button data-mood="4" class="mood-btn flex-1 text-2xl py-2 rounded-xl hover:bg-appbg transition">🙂</button>
-            <button data-mood="5" class="mood-btn flex-1 text-2xl py-2 rounded-xl hover:bg-appbg transition">😄</button>
+            <button data-mood="1" title="Need care" aria-label="Need care" class="mood-btn flex-1 py-2 rounded-xl hover:bg-appbg transition"><span class="block text-2xl">🌧️</span><span class="block mt-1 text-[9px] font-semibold text-sub">Need care</span></button>
+            <button data-mood="2" title="Hold me" aria-label="Hold me" class="mood-btn flex-1 py-2 rounded-xl hover:bg-appbg transition"><span class="block text-2xl">🫂</span><span class="block mt-1 text-[9px] font-semibold text-sub">Hold me</span></button>
+            <button data-mood="3" title="Steady" aria-label="Steady" class="mood-btn flex-1 py-2 rounded-xl hover:bg-appbg transition"><span class="block text-2xl">🕯️</span><span class="block mt-1 text-[9px] font-semibold text-sub">Steady</span></button>
+            <button data-mood="4" title="Feeling close" aria-label="Feeling close" class="mood-btn flex-1 py-2 rounded-xl hover:bg-appbg transition"><span class="block text-2xl">🫶</span><span class="block mt-1 text-[9px] font-semibold text-sub">Close</span></button>
+            <button data-mood="5" title="Glowing together" aria-label="Glowing together" class="mood-btn flex-1 py-2 rounded-xl hover:bg-appbg transition"><span class="block text-2xl">💞</span><span class="block mt-1 text-[9px] font-semibold text-sub">Glowing</span></button>
           </div>
-          <input id="moodNote" type="text" maxlength="140" placeholder="Anything on your mind? (optional)" class="w-full rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
+          <input id="moodNote" type="text" maxlength="140" placeholder="Anything you'd like your partner to know? (optional)" class="w-full rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
           <div id="moodSync" class="text-center text-xs font-semibold mt-2"></div>
           <div class="rounded-xl bg-white border border-line p-2 mt-1" style="height:150px"><canvas id="moodChart"></canvas></div>
         </div>
@@ -587,7 +587,16 @@
     { key:"todo", label:"To-Do", emoji:"📝", hint:"Shared list for tasks and small reminders." },
   ];
   const DEFAULT_VAULT = { day: 5, hour: 17, openHours: 24 };
-  const MOOD_EMOJI = ["", "😢", "🙁", "😐", "🙂", "😄"];
+  const MOOD_OPTIONS = [
+    null,
+    { emoji:"🌧️", label:"Need care" },
+    { emoji:"🫂", label:"Hold me" },
+    { emoji:"🕯️", label:"Steady" },
+    { emoji:"🫶", label:"Close" },
+    { emoji:"💞", label:"Glowing" },
+  ];
+  const MOOD_EMOJI = MOOD_OPTIONS.map((m) => m ? m.emoji : "");
+  const moodLabel = (score) => (MOOD_OPTIONS[score] && MOOD_OPTIONS[score].label) || "Unknown";
 
   // A year of gentle daily reminders — one reveals each morning.
   const QUOTES = [
@@ -1238,7 +1247,7 @@
     const safe = detail || "";
     const map = {
       habit: { emoji:"✨", title:"Tiny win logged", body:`${who} just gave Future Us a tiny win${safe ? ": " + safe : ""}. Your move, teammate?` },
-      mood: { emoji:"💛", title:"Mood check-in", body:`${who} checked in with their mood. Tiny honesty, big love.` },
+      mood: { emoji:"💛", title:"Heart check-in", body:`${who} shared how their heart feels${safe ? ": " + safe : ""}. Tiny honesty, big love.` },
       list: { emoji:"🪺", title:"Shared list updated", body:`${who} added ${safe ? "“" + safe + "”" : "something"} to a shared list.` },
       plant: { emoji:"🪴", title:"Plant moment", body:`${who} added ${safe || "a new plant"} to your little jungle.` },
       water: { emoji:"💧", title:"Plant cared for", body:`${who} watered ${safe || "a plant"}. The home jungle approves.` },
@@ -1308,9 +1317,9 @@
       const ws = startOfWeek();
       const moodBlock = mem.map((m) => {
         const ms = STATE.moods.filter((x) => x.uid === m.uid && x.date && within(x.date, 14)).sort((a, b) => a.date.localeCompare(b.date));
-        const scores = ms.map((x) => x.score).join(", ") || "none";
         const notes = ms.map((x) => x.note).filter(Boolean).slice(-6).map((n) => `"${n}"`).join("; ") || "none";
-        return `${m.name}: mood scores [${scores}] (1 low – 5 great); notes: ${notes}`;
+        const states = ms.map((x) => `${x.score} (${moodLabel(x.score)})`).join(", ") || "none";
+        return `${m.name}: heart states [${states}] (1 needs care – 5 glowing); notes: ${notes}`;
       }).join("\n");
       const sync = moodSyncInfo(); const syncTxt = sync ? sync.pct + "%" : "not enough data yet";
       const habits = mem.map((m) => `${m.name}: ${STATE.logs.filter((l) => l.uid === m.uid && new Date(l.timestamp) >= ws).length}`).join(", ");
