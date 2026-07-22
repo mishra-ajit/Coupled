@@ -170,11 +170,11 @@
             <span id="moodToday" class="text-xs text-sub"></span>
           </div>
           <div id="moodPicker" class="flex justify-between gap-1 mb-2">
-            <button data-mood="1" title="Need care" aria-label="Need care" class="mood-btn flex-1 py-2 rounded-xl hover:bg-appbg transition"><span class="block text-2xl">🌧️</span><span class="block mt-1 text-[9px] font-semibold text-sub">Need care</span></button>
+            <button data-mood="1" title="Need care" aria-label="Need care" class="mood-btn flex-1 py-2 rounded-xl hover:bg-appbg transition"><span class="block text-2xl">🩹</span><span class="block mt-1 text-[9px] font-semibold text-sub">Need care</span></button>
             <button data-mood="2" title="Hold me" aria-label="Hold me" class="mood-btn flex-1 py-2 rounded-xl hover:bg-appbg transition"><span class="block text-2xl">🫂</span><span class="block mt-1 text-[9px] font-semibold text-sub">Hold me</span></button>
-            <button data-mood="3" title="Steady" aria-label="Steady" class="mood-btn flex-1 py-2 rounded-xl hover:bg-appbg transition"><span class="block text-2xl">🕯️</span><span class="block mt-1 text-[9px] font-semibold text-sub">Steady</span></button>
-            <button data-mood="4" title="Feeling close" aria-label="Feeling close" class="mood-btn flex-1 py-2 rounded-xl hover:bg-appbg transition"><span class="block text-2xl">🫶</span><span class="block mt-1 text-[9px] font-semibold text-sub">Close</span></button>
-            <button data-mood="5" title="Glowing together" aria-label="Glowing together" class="mood-btn flex-1 py-2 rounded-xl hover:bg-appbg transition"><span class="block text-2xl">💞</span><span class="block mt-1 text-[9px] font-semibold text-sub">Glowing</span></button>
+            <button data-mood="3" title="Steady" aria-label="Steady" class="mood-btn flex-1 py-2 rounded-xl hover:bg-appbg transition"><span class="block text-2xl">☕</span><span class="block mt-1 text-[9px] font-semibold text-sub">Steady</span></button>
+            <button data-mood="4" title="Feeling close" aria-label="Feeling close" class="mood-btn flex-1 py-2 rounded-xl hover:bg-appbg transition"><span class="block text-2xl">🧲</span><span class="block mt-1 text-[9px] font-semibold text-sub">Close</span></button>
+            <button data-mood="5" title="Glowing together" aria-label="Glowing together" class="mood-btn flex-1 py-2 rounded-xl hover:bg-appbg transition"><span class="block text-2xl">✨</span><span class="block mt-1 text-[9px] font-semibold text-sub">Glowing</span></button>
           </div>
           <input id="moodNote" type="text" maxlength="140" placeholder="Anything you'd like your partner to know? (optional)" class="w-full rounded-xl bg-white border border-line px-3 py-2.5 text-sm text-ink placeholder-sub focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none" />
           <div id="moodSync" class="text-center text-xs font-semibold mt-2"></div>
@@ -589,11 +589,11 @@
   const DEFAULT_VAULT = { day: 5, hour: 17, openHours: 24 };
   const MOOD_OPTIONS = [
     null,
-    { emoji:"🌧️", label:"Need care" },
+    { emoji:"🩹", label:"Need care" },
     { emoji:"🫂", label:"Hold me" },
-    { emoji:"🕯️", label:"Steady" },
-    { emoji:"🫶", label:"Close" },
-    { emoji:"💞", label:"Glowing" },
+    { emoji:"☕", label:"Steady" },
+    { emoji:"🧲", label:"Close" },
+    { emoji:"✨", label:"Glowing" },
   ];
   const MOOD_EMOJI = MOOD_OPTIONS.map((m) => m ? m.emoji : "");
   const moodLabel = (score) => (MOOD_OPTIONS[score] && MOOD_OPTIONS[score].label) || "Unknown";
